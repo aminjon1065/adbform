@@ -5,42 +5,67 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('first_forms', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users');
-            $table->date('date');
-            $table->text('rayon');
-            $table->text('jamoat');
-            $table->text('selo')->nullable();
+
+            $table->foreignId('user_id')
+                ->nullable()
+                ->constrained()
+                ->cascadeOnDelete();
+            // 0. Дата встречи
+            $table->date('meeting_date')->index();
+
+            // 1. Адрес
+            $table->string('rayon', 120);
+            $table->string('jamoat', 120);
+            $table->string('selo', 120)->nullable();
+
+            // 2. Согласие
             $table->boolean('accept')->default(false);
-            $table->text('name');
-            $table->smallInteger('age');
-            $table->text('phone');
-            $table->smallInteger('family_count');
-            $table->smallInteger('children_count')->default(0);
-            $table->smallInteger('old_man_count')->default(0);
-            $table->smallInteger('able_count')->default(0);
-            $table->text('income');
-            $table->integer('garden');
-            $table->text("agriculture_experience");
-            $table->json("seed")->nullable();
-            $table->json("seedlings")->nullable();
-            $table->text('irrigation_source');
+
+            // 3. Участник
+            $table->string('full_name', 200);
+            $table->unsignedTinyInteger('age'); // 1..100
+            $table->string('phone', 9); // ровно 9 цифр
+            // $table->unique('phone'); // <- включи при необходимости
+
+            // 4. Семья
+            $table->unsignedTinyInteger('family_count');
+            $table->unsignedTinyInteger('children_count')->default(0);
+            $table->unsignedTinyInteger('elderly_count')->default(0);
+            $table->unsignedTinyInteger('able_count')->default(0);
+
+            // 5. Доход
+            $table->string('income', 120); // либо enum в БД, но строка гибче
+
+            // 6. Площадь участка (га)
+            $table->decimal('plot_ha', 8, 2)->nullable(); // раньше было integer garden
+
+            // 7. Опыт
+            $table->string('agriculture_experience', 60); // овощеводство/садоводство/пчеловодство/нет опыта
+
+            // 8. Семена/саженцы (массивы объектов {key, area})
+            $table->json('seeds')->nullable();
+            $table->json('seedlings')->nullable();
+
+            // 9. Источник орошения (мульти)
+            $table->json('irrigation_sources'); // ["none","well","pump","canal"]
+
+            // 10. Пчеловодство
             $table->boolean('beekeeping')->default(false);
-            $table->json('storage');
-            $table->boolean('refrigerator')->default(false);
+
+            // 11. Склад
+            $table->boolean('has_storage')->default(false);
+            $table->unsignedInteger('storage_area_sqm')->nullable(); // м²
+
+            // 12. Холодильная камера
+            $table->boolean('has_refrigerator')->default(false);
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('first_forms');
