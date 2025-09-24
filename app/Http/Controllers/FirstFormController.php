@@ -5,22 +5,48 @@ namespace App\Http\Controllers;
 use App\Http\Requests\FirstFormRequest;
 use App\Models\FirstForm;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 
 class FirstFormController extends Controller
 {
     public function store(FirstFormRequest $request): RedirectResponse
     {
         $v = $request->validated();
-        // Если frontend прислал пустые массивы — приведём к null, чтобы в БД были NULL, а не []
-        $seeds      = !empty($v['seeds']) ? array_values($v['seeds']) : null;
-        $seedlings  = !empty($v['seedlings']) ? array_values($v['seedlings']) : null;
-        $userId = optional($request->user())->id;
 
-        $form = FirstForm::create([
-            'user_id'                 => $userId,
+        // seeds / seedlings: нормализуем и фильтруем пустые записи
+        $seeds = !empty($v['seeds'])
+            ? array_values(array_filter($v['seeds'], fn ($i) =>
+                isset($i['key'], $i['area']) && $i['area'] !== ''
+            ))
+            : null;
 
-            'meeting_date'            => $v['meeting_date'],     // Y-m-d (cast: date)
+        $seedlings = !empty($v['seedlings'])
+            ? array_values(array_filter($v['seedlings'], fn ($i) =>
+                isset($i['key'], $i['area']) && $i['area'] !== ''
+            ))
+            : null;
+
+        // irrigation_sources: уникальные строки
+        $irrigation = array_values(array_unique($v['irrigation_sources'] ?? []));
+
+        // plot_ha: безопасное приведение под DECIMAL(8,2)
+        $plotHa = (isset($v['plot_ha']) && $v['plot_ha'] !== '')
+            ? number_format((float) $v['plot_ha'], 2, '.', '')
+            : null;
+
+        // (опционально) проверка согласованности семьи
+        if (
+            isset($v['family_count'], $v['children_count'], $v['elderly_count'], $v['able_count']) &&
+            (int)$v['family_count'] < ((int)$v['children_count'] + (int)$v['elderly_count'] + (int)$v['able_count'])
+        ) {
+            return back()->withErrors([
+                'family_count' => 'Сумма детей, пожилых и трудоспособных не может превышать общее количество семьи.',
+            ])->withInput();
+        }
+
+        FirstForm::create([
+            'user_id'                 => optional($request->user())->id,
+
+            'meeting_date'            => $v['meeting_date'], // Y-m-d
             'rayon'                   => $v['rayon'],
             'jamoat'                  => $v['jamoat'],
             'selo'                    => $v['selo'] ?? null,
@@ -38,16 +64,14 @@ class FirstFormController extends Controller
 
             'income'                  => $v['income'],
 
-            'plot_ha'                 => isset($v['plot_ha']) && $v['plot_ha'] !== ''
-                ? (float) $v['plot_ha']
-                : null,
+            'plot_ha'                 => $plotHa,
 
             'agriculture_experience'  => $v['agriculture_experience'],
 
-            'seeds'                   => $seeds,       // cast: array/json
-            'seedlings'               => $seedlings,   // cast: array/json
+            'seeds'                   => $seeds,      // cast: array/json
+            'seedlings'               => $seedlings,  // cast: array/json
 
-            'irrigation_sources'      => $v['irrigation_sources'] ?? [],
+            'irrigation_sources'      => $irrigation,
 
             'beekeeping'              => (bool) ($v['beekeeping'] ?? false),
 
@@ -61,6 +85,4 @@ class FirstFormController extends Controller
 
         return back()->with('success', 'Анкета сохранена.');
     }
-
-
 }

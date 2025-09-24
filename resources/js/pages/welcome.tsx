@@ -34,7 +34,12 @@ export default function Welcome() {
                     </div>
                 </div>
             ) : (
-                auth.user.name
+                <div className="flex justify-center md:justify-end">
+                    <div className={'mt-5'}>
+                        <p>{auth.user.name}</p>
+                        <p>Позиция</p>
+                    </div>
+                </div>
             )}
             <div className="flex min-h-screen flex-col items-center bg-[#FDFDFC] p-6 text-[#1b1b18] lg:justify-center lg:p-8 dark:bg-[#0a0a0a]">
                 <div className="flex w-full max-w-md flex-col gap-6 md:max-w-max">
