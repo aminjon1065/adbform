@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type SharedData } from '@/types';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 export default function Welcome() {
     const { auth } = usePage<SharedData>().props;
 
@@ -25,12 +25,25 @@ export default function Welcome() {
                     rel="stylesheet"
                 />
             </Head>
+            {!auth.user ? (
+                <div className="flex justify-center md:justify-end">
+                    <div className={'mt-5'}>
+                        <Link href={'login'}>
+                            <Button>Для работников ГТЛ</Button>
+                        </Link>
+                    </div>
+                </div>
+            ) : (
+                auth.user.name
+            )}
             <div className="flex min-h-screen flex-col items-center bg-[#FDFDFC] p-6 text-[#1b1b18] lg:justify-center lg:p-8 dark:bg-[#0a0a0a]">
-                <div className="flex w-full max-w-md md:max-w-max flex-col gap-6">
+                <div className="flex w-full max-w-md flex-col gap-6 md:max-w-max">
                     <Tabs defaultValue="account">
-                        <TabsList className={"mx-auto"}>
+                        <TabsList className={'mx-auto'}>
                             <TabsTrigger value="account">Работниц </TabsTrigger>
-                            <TabsTrigger value="password">Руководителей</TabsTrigger>
+                            <TabsTrigger value="password">
+                                Руководителей
+                            </TabsTrigger>
                         </TabsList>
                         <TabsContent value="account">
                             <FirstForm />
