@@ -59,7 +59,7 @@ class FirstFormController extends Controller
             'has_refrigerator'        => (bool) $v['has_refrigerator'],
         ]);
 
-        return redirect()->with('success', 'Анкета сохранена.');
+        return back()->with('success', 'Анкета сохранена.');
     }
 
 

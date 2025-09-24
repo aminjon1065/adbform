@@ -264,8 +264,13 @@ const FirstForm: React.FC = () => {
         console.log('payload: ', payload);
         post('/first-forms', {
             data: payload,
+            onSuccess: ()=>{
+                const confirmMsg = confirm('Успешно добавлено');
+                if (confirmMsg){
+                    window.location.reload();
+                }
+            },
             preserveScroll: true,
-            onSuccess: setData({}),
         });
     };
 
