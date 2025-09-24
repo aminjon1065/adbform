@@ -13,12 +13,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { ChevronDownIcon } from "lucide-react";
 import { format, parse } from "date-fns";
-import { toast } from "sonner";
+import { toast } from "sonner"
 
-/* ===================== Types & helpers ===================== */
+/* ===== helpers & types ===== */
 type VegKey = "tomato" | "pepper" | "cucumber" | "onion" | "beet" | "potato" | "other";
 type GardenKey = "apricot" | "apple" | "grape" | "almond" | "persimmon" | "berries" | "other";
 type IrrKey = "none" | "well" | "pump" | "canal";
+type Equip = "freza" | "seeder" | "cultivator" | "other" | "";
 
 type MarkedMap<K extends string> = Record<K, { checked: boolean; area: string }>;
 
@@ -28,24 +29,22 @@ type FormData = {
     jamoat: string;
     selo: string | null;
     accept: boolean;
-    full_name: string;
-    age: string;
-    phone: string;
-    family_count: string;
-    children_count: string;
-    elderly_count: string;
-    able_count: string;
-    income: string;
-    income_other_text: string;
-    plot_ha: string;
+    farm_name: string;
+    leader_full_name: string;
+    leader_age: string;
+    leader_phone: string;
+    farm_plot_ha: string;
     agriculture_experience: "" | "овощеводство" | "садоводство" | "пчеловодство" | "нет опыта";
     veg: MarkedMap<VegKey>;
     garden: MarkedMap<GardenKey>;
+    equipment_choice: Equip;
+    equipment_other_text: string;
     irrigation_sources: IrrKey[];
     beekeeping: boolean;
     has_storage: boolean;
     storage_area_sqm: string;
     has_refrigerator: boolean;
+    signature: string;
 };
 
 const onlyDigits = (s: string) => s.replace(/\D/g, "");
@@ -84,15 +83,14 @@ const IRRIGATION_OPTIONS: Array<[string, IrrKey]> = [
     ["Канал / река", "canal"],
 ];
 
-const INCOME_OPTIONS: Array<[string, string]> = [
-    ["Сельское хозяйство", "agriculture"],
-    ["Сезонные работы", "seasonal"],
-    ["Работа за рубежом", "abroad"],
-    ["Пенсия", "pension"],
+const EQUIPMENT_OPTIONS: Array<[label: string, value: Equip]> = [
+    ["Фреза", "freza"],
+    ["Посевная машина", "seeder"],
+    ["Мотокультиватор", "cultivator"],
     ["Другое", "other"],
 ];
 
-/* ===================== MarkedItemSection Component ===================== */
+/* ===== reusable block for seeds/seedlings ===== */
 function MarkedItemSection<K extends string>({
                                                  options,
                                                  data,
@@ -143,24 +141,19 @@ function MarkedItemSection<K extends string>({
     );
 }
 
-/* ===================== Main Component ===================== */
-const FirstForm: React.FC = () => {
+/* ===== Main component ===== */
+const SecondForm: React.FC = () => {
     const { data, setData, post, processing, errors, setError, reset, transform } = useForm<FormData>({
         meeting_date: null,
         rayon: "",
         jamoat: "",
         selo: "",
         accept: true,
-        full_name: "",
-        age: "",
-        phone: "",
-        family_count: "",
-        children_count: "",
-        elderly_count: "",
-        able_count: "",
-        income: "",
-        income_other_text: "",
-        plot_ha: "",
+        farm_name: "",
+        leader_full_name: "",
+        leader_age: "",
+        leader_phone: "",
+        farm_plot_ha: "",
         agriculture_experience: "",
         veg: {
             tomato: { checked: false, area: "" },
@@ -180,11 +173,14 @@ const FirstForm: React.FC = () => {
             berries: { checked: false, area: "" },
             other: { checked: false, area: "" },
         },
+        equipment_choice: "",
+        equipment_other_text: "",
         irrigation_sources: [],
         beekeeping: false,
         has_storage: false,
         storage_area_sqm: "",
         has_refrigerator: false,
+        signature: "",
     });
 
     const [openDate, setOpenDate] = useState(false);
@@ -194,7 +190,7 @@ const FirstForm: React.FC = () => {
 
     const showVegetable = data.agriculture_experience === "овощеводство";
     const showGarden = data.agriculture_experience === "садоводство";
-    const showIncomeOther = data.income === "other";
+    const showEquipmentOther = data.equipment_choice === "other";
 
     const setVegItem = (key: VegKey, patch: Partial<{ checked: boolean; area: string }>) =>
         setData("veg", { ...data.veg, [key]: { ...data.veg[key], ...patch } });
@@ -217,73 +213,61 @@ const FirstForm: React.FC = () => {
     const resetMarked = <K extends string>(obj: MarkedMap<K>): MarkedMap<K> =>
         Object.fromEntries(Object.keys(obj).map((k) => [k, { checked: false, area: "" }])) as MarkedMap<K>;
 
-    const onAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        if (/^\d*$/.test(value)) {
-            const num = Number(value);
-            setData("age", value === "" ? "" : String(clamp(num, 1, 100)));
+    const onLeaderAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const v = e.target.value;
+        if (/^\d*$/.test(v)) {
+            const num = Number(v);
+            setData("leader_age", v === "" ? "" : String(clamp(num, 18, 100)));
         }
     };
 
     const validate = (): boolean => {
-        let valid = true;
+        let ok = true;
 
         if (!data.meeting_date) {
             setError("meeting_date", "Укажите дату проведения встречи.");
-            valid = false;
+            ok = false;
         }
         if (!data.accept) {
             setError("accept", "Нужно согласие на участие.");
-            valid = false;
+            ok = false;
         }
-        if (!data.full_name.trim()) {
-            setError("full_name", "Укажите Ф.И.О.");
-            valid = false;
-        }
-        if (!data.age) {
-            setError("age", "Укажите возраст.");
-            valid = false;
-        }
-        if (data.phone.length !== 9) {
-            setError("phone", "Номер телефона должен содержать ровно 9 цифр.");
-            valid = false;
-        }
-        if (!data.family_count) {
-            setError("family_count", "Укажите общее количество членов семьи.");
-            valid = false;
-        }
-        if (!data.income) {
-            setError("income", "Укажите источник дохода.");
-            valid = false;
-        }
-        if (data.income === "other" && !data.income_other_text.trim()) {
-            setError("income_other_text", "Укажите источник дохода для 'Другое'.");
-            valid = false;
-        }
-        if (!data.plot_ha) {
-            setError("plot_ha", "Укажите площадь участка (га).");
-            valid = false;
+        if (data.leader_phone.length !== 9) {
+            setError("leader_phone", "Номер телефона должен содержать ровно 9 цифр.");
+            ok = false;
         }
         if (showVegetable && anyVegChecked) {
             const miss = Object.values(data.veg).some((v) => v.checked && !v.area);
             if (miss) {
-                setError("seeds", "Для выбранных культур в овощеводстве укажите площадь (га).");
-                valid = false;
+                setError("seeds", "Для выбранных культур укажите площадь (га).");
+                ok = false;
             }
         }
         if (showGarden && anyGardenChecked) {
             const miss = Object.values(data.garden).some((v) => v.checked && !v.area);
             if (miss) {
-                setError("seedlings", "Для выбранных культур в садоводстве укажите площадь (га).");
-                valid = false;
+                setError("seedlings", "Для выбранных культур укажите площадь (га).");
+                ok = false;
             }
         }
         if (data.has_storage && !data.storage_area_sqm) {
             setError("storage_area_sqm", "Укажите площадь склада (м²).");
-            valid = false;
+            ok = false;
+        }
+        if (!data.equipment_choice) {
+            setError("equipment_choice", "Выберите вид сельскохозяйственной техники.");
+            ok = false;
+        }
+        if (data.equipment_choice === "other" && data.equipment_other_text.trim().length < 3) {
+            setError("equipment_other_text", "Укажите корректное название техники (минимум 3 символа).");
+            ok = false;
+        }
+        if (!data.signature.trim()) {
+            setError("signature", "Укажите подпись (Ф.И.О.).");
+            ok = false;
         }
 
-        return valid;
+        return ok;
     };
 
     const resetForm = () => {
@@ -295,24 +279,22 @@ const FirstForm: React.FC = () => {
             jamoat: "",
             selo: "",
             accept: true,
-            full_name: "",
-            age: "",
-            phone: "",
-            family_count: "",
-            children_count: "",
-            elderly_count: "",
-            able_count: "",
-            income: "",
-            income_other_text: "",
-            plot_ha: "",
+            farm_name: "",
+            leader_full_name: "",
+            leader_age: "",
+            leader_phone: "",
+            farm_plot_ha: "",
             agriculture_experience: "",
             veg: resetMarked(d.veg),
             garden: resetMarked(d.garden),
+            equipment_choice: "",
+            equipment_other_text: "",
             irrigation_sources: [],
             beekeeping: false,
             has_storage: false,
             storage_area_sqm: "",
             has_refrigerator: false,
+            signature: "",
         }));
         Object.keys(errors).forEach((key) => setError(key, ""));
     };
@@ -338,29 +320,28 @@ const FirstForm: React.FC = () => {
             jamoat: d.jamoat,
             selo: d.selo || null,
             accept: !!d.accept,
-            full_name: d.full_name,
-            age: d.age ? Number(d.age) : null,
-            phone: d.phone,
-            family_count: d.family_count ? Number(d.family_count) : 0,
-            children_count: d.children_count ? Number(d.children_count) : 0,
-            elderly_count: d.elderly_count ? Number(d.elderly_count) : 0,
-            able_count: d.able_count ? Number(d.able_count) : 0,
-            income: d.income === "other" ? d.income_other_text : d.income,
-            plot_ha: toDecimal(d.plot_ha),
+            farm_name: d.farm_name,
+            leader_full_name: d.leader_full_name,
+            leader_age: d.leader_age ? Number(d.leader_age) : null,
+            leader_phone: d.leader_phone,
+            farm_plot_ha: toDecimal(d.farm_plot_ha),
             agriculture_experience: d.agriculture_experience,
             seeds: seeds.length ? seeds : null,
             seedlings: seedlings.length ? seedlings : null,
+            equipment_choice: d.equipment_choice,
+            equipment_other_text: d.equipment_choice === "other" ? d.equipment_other_text : null,
             irrigation_sources: d.irrigation_sources,
             beekeeping: !!d.beekeeping,
             has_storage: !!d.has_storage,
             storage_area_sqm: d.has_storage ? (d.storage_area_sqm ? Number(d.storage_area_sqm) : 0) : null,
             has_refrigerator: !!d.has_refrigerator,
+            signature: d.signature || null,
         }));
 
-        post("/first-forms", {
+        post("/second-forms", {
             preserveScroll: true,
             onSuccess: () => {
-                toast.success("Анкета сохранена");
+                toast.success("Анкета №2 сохранена");
                 resetForm();
             },
             onError: (serverErrors) => {
@@ -375,9 +356,7 @@ const FirstForm: React.FC = () => {
         <form onSubmit={onSubmit}>
             <Card>
                 <CardHeader>
-                    <CardTitle>
-                        Анкета для проведения опроса по определению нужд бенефициаров, женщин – работниц сельскохозяйственной отрасли.
-                    </CardTitle>
+                    <CardTitle>Анкета для проведения опроса по определению нужд бенефициаров, женщин – руководителей дехканских хозяйств.</CardTitle>
                     <CardDescription className="text-black dark:text-white">
                         Цель: Определение текущих потребностей женщин-фермеров для планирования дальнейших мероприятий в рамках Проекта
                         «Обеспечение устойчивых средств к существованию и расширение прав и возможностей сельских женщин», финансируемого
@@ -387,7 +366,7 @@ const FirstForm: React.FC = () => {
                 </CardHeader>
 
                 <CardContent className="grid gap-6">
-                    {/* Дата проведения встречи */}
+                    {/* Дата + адрес */}
                     <div className="grid gap-3">
                         <Label htmlFor="date_btn">Дата проведения встречи</Label>
                         <Popover open={openDate} onOpenChange={setOpenDate}>
@@ -397,7 +376,7 @@ const FirstForm: React.FC = () => {
                                     <ChevronDownIcon />
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto overflow-hidden p-0" align="start Лу">
+                            <PopoverContent className="w-auto overflow-hidden p-0" align="start">
                                 <Calendar
                                     mode="single"
                                     selected={ymdToDate(data.meeting_date)}
@@ -414,7 +393,6 @@ const FirstForm: React.FC = () => {
                         {errors.meeting_date && <p className="text-red-500">{errors.meeting_date}</p>}
                     </div>
 
-                    {/* Адрес */}
                     <div className="grid gap-3">
                         <Label>Адрес</Label>
                         <div className="md:flex gap-2 space-y-3">
@@ -442,9 +420,6 @@ const FirstForm: React.FC = () => {
                     {/* Согласие */}
                     <div className="grid gap-3">
                         <Label>Согласие на участие в опросе:</Label>
-                        <span className="text-sm">
-                            Я, нижеподписавшаяся, подтверждаю свою добровольную готовность принять участие в данном опросе…
-                        </span>
                         <RadioGroup
                             value={data.accept ? "1" : "0"}
                             onValueChange={(v) => setData("accept", v === "1")}
@@ -465,134 +440,65 @@ const FirstForm: React.FC = () => {
 
                     <Separator className="my-4" />
 
-                    {/* 1. Информация об участнике */}
+                    {/* 1. Информация о ДХ */}
                     <div className="grid gap-3">
-                        <Label>1. Информация об участнике опроса</Label>
+                        <Label>1. Информация о дехканском хозяйстве</Label>
+                        <Input
+                            placeholder="Название ДХ"
+                            value={data.farm_name}
+                            onChange={(e) => setData("farm_name", e.target.value)}
+                            aria-label="Название дехканского хозяйства"
+                        />
                         <div className="md:flex gap-2 space-y-3">
                             <Input
-                                placeholder="Ф.И.О."
-                                value={data.full_name}
-                                onChange={(e) => setData("full_name", e.target.value)}
-                                aria-label="Ф.И.О."
+                                placeholder="Ф.И.О. руководителя ДХ"
+                                value={data.leader_full_name}
+                                onChange={(e) => setData("leader_full_name", e.target.value)}
+                                aria-label="Ф.И.О. руководителя ДХ"
                             />
                             <Input
                                 type="number"
-                                min={1}
+                                min={18}
                                 max={100}
                                 step={1}
-                                value={data.age}
-                                placeholder="Возраст"
-                                onChange={onAgeChange}
-                                aria-label="Возраст"
+                                placeholder="Возраст руководителя ДХ"
+                                value={data.leader_age}
+                                onChange={onLeaderAgeChange}
+                                aria-label="Возраст руководителя ДХ"
                             />
                             <Input
                                 type="tel"
                                 inputMode="numeric"
                                 autoComplete="tel-local"
-                                placeholder="Номер телефона"
-                                value={data.phone}
+                                placeholder="Номер телефона руководителя ДХ"
+                                value={data.leader_phone}
                                 maxLength={9}
-                                onChange={(e) => setData("phone", onlyDigits(e.target.value).slice(0, 9))}
-                                aria-label="Номер телефона"
+                                onChange={(e) => setData("leader_phone", onlyDigits(e.target.value).slice(0, 9))}
+                                aria-label="Номер телефона руководителя ДХ"
                             />
                         </div>
-                        {errors.full_name && <p className="text-red-500">{errors.full_name}</p>}
-                        {errors.age && <p className="text-red-500">{errors.age}</p>}
-                        {errors.phone && <p className="text-red-500">{errors.phone}</p>}
+                        {errors.leader_phone && <p className="text-red-500">{errors.leader_phone}</p>}
                     </div>
 
-                    {/* 2. Семья */}
+                    {/* 2. Площадь ДХ */}
                     <div className="grid gap-3">
-                        <Label>2. Общее количество членов семьи</Label>
-                        <div className="md:flex gap-2 space-y-3">
-                            <Input
-                                type="number"
-                                min={0}
-                                step={1}
-                                placeholder="Всего"
-                                value={data.family_count}
-                                onChange={(e) => setData("family_count", onlyDigits(e.target.value))}
-                                aria-label="Всего членов семьи"
-                            />
-                            <Input
-                                type="number"
-                                min={0}
-                                step={1}
-                                placeholder="Дети"
-                                value={data.children_count}
-                                onChange={(e) => setData("children_count", onlyDigits(e.target.value))}
-                                aria-label="Количество детей"
-                            />
-                            <Input
-                                type="number"
-                                min={0}
-                                step={1}
-                                placeholder="Пожилые"
-                                value={data.elderly_count}
-                                onChange={(e) => setData("elderly_count", onlyDigits(e.target.value))}
-                                aria-label="Количество пожилых"
-                            />
-                            <Input
-                                type="number"
-                                min={0}
-                                step={1}
-                                placeholder="Трудоспособные"
-                                value={data.able_count}
-                                onChange={(e) => setData("able_count", onlyDigits(e.target.value))}
-                                aria-label="Количество трудоспособных"
-                            />
-                        </div>
-                        {errors.family_count && <p className="text-red-500">{errors.family_count}</p>}
-                    </div>
-
-                    {/* 3. Доход */}
-                    <div className="grid gap-3">
-                        <Label>3. Основной источник дохода семьи</Label>
-                        <RadioGroup
-                            value={data.income}
-                            onValueChange={(v) => setData("income", v)}
-                            className="flex flex-col md:flex-row gap-3"
-                            aria-label="Основной источник дохода семьи"
-                        >
-                            {INCOME_OPTIONS.map(([label, value]) => (
-                                <div key={value} className="flex items-center gap-2">
-                                    <RadioGroupItem value={value} id={`income_${value}`} />
-                                    <Label htmlFor={`income_${value}`}>{label}</Label>
-                                </div>
-                            ))}
-                        </RadioGroup>
-                        {errors.income && <p className="text-red-500">{errors.income}</p>}
-                        {showIncomeOther && (
-                            <Input
-                                placeholder="Если другое — укажите"
-                                value={data.income_other_text}
-                                onChange={(e) => setData("income_other_text", e.target.value)}
-                                aria-label="Укажите другой источник дохода"
-                            />
-                        )}
-                        {errors.income_other_text && <p className="text-red-500">{errors.income_other_text}</p>}
-                    </div>
-
-                    {/* 4. Площадь участка */}
-                    <div className="grid gap-3">
-                        <Label>4. Площадь приусадебного участка (га)</Label>
+                        <Label>2. Площадь дехканского хозяйства (га)</Label>
                         <Input
                             type="text"
                             inputMode="decimal"
                             placeholder="в гектарах"
-                            value={data.plot_ha}
+                            value={data.farm_plot_ha}
                             onChange={(e) => {
                                 const value = e.target.value;
-                                if (/^\d*[.,]?\d*$/.test(value)) setData("plot_ha", value);
+                                if (/^\d*[.,]?\d*$/.test(value)) setData("farm_plot_ha", value);
                             }}
-                            aria-label="Площадь участка в гектарах"
+                            aria-label="Площадь хозяйства в гектарах"
                         />
-                        {errors.plot_ha && <p className="text-red-500">{errors.plot_ha}</p>}
                     </div>
 
-                    {/* 5. Опыт */}
+                    {/* 3. Опыт */}
                     <div className="grid gap-3">
-                        <Label>5. В какой отрасли сельского хозяйства у вас есть опыт?</Label>
+                        <Label>3. В какой отрасли сельского хозяйства у вас есть опыт?</Label>
                         <RadioGroup
                             value={data.agriculture_experience}
                             onValueChange={(v) => {
@@ -622,33 +528,61 @@ const FirstForm: React.FC = () => {
                         </RadioGroup>
                     </div>
 
-                    {/* 6. Овощеводство */}
+                    {/* 4. Овощеводство */}
                     {showVegetable && (
                         <MarkedItemSection
                             options={VEG_OPTIONS}
                             data={data.veg}
                             setItem={setVegItem}
-                            label="6. Если Вы выбираете направление «Овощеводство», отметьте нужные семена и укажите площадь (га):"
-                            note="Примечание: В пакет входят сеялка, опрыскиватель, защитная спецодежда, овощеводческий инвентарь."
+                            label="4. Если Вы выбираете «Овощеводство», отметьте семена и укажите площадь (га):"
+                            note="Примечание: сеялка, опрыскиватель, защитная одежда, овощеводческий инвентарь."
                             error={errors.seeds}
                         />
                     )}
 
-                    {/* 7. Садоводство */}
+                    {/* 5. Садоводство */}
                     {showGarden && (
                         <MarkedItemSection
                             options={GARDEN_OPTIONS}
                             data={data.garden}
                             setItem={setGardenItem}
-                            label="7. Если Вы выбираете направление «Садоводство», отметьте нужные саженцы и укажите площадь (га):"
-                            note="Примечание: В пакет входят ручной опрыскиватель, защитная спецодежда, садовый инвентарь (набор)."
+                            label="5. Если Вы выбираете «Садоводство», отметьте саженцы и укажите площадь (га):"
+                            note="Примечание: ручной опрыскиватель, защитная одежда, садовый инвентарь (набор)."
                             error={errors.seedlings}
                         />
                     )}
 
-                    {/* 8. Орошение */}
+                    {/* 6. Техника */}
                     <div className="grid gap-3">
-                        <Label>8. Укажите доступный источник орошения:</Label>
+                        <Label>6. Выберите один нужный Вам вид сельскохозяйственной техники</Label>
+                        <RadioGroup
+                            value={data.equipment_choice}
+                            onValueChange={(v) => setData("equipment_choice", v as Equip)}
+                            className="flex flex-col md:flex-row gap-3"
+                            aria-label="Выбор сельскохозяйственной техники"
+                        >
+                            {EQUIPMENT_OPTIONS.map(([label, val]) => (
+                                <div key={val} className="flex items-center gap-2">
+                                    <RadioGroupItem value={val} id={`equip_${val}`} />
+                                    <Label htmlFor={`equip_${val}`}>{label}</Label>
+                                </div>
+                            ))}
+                        </RadioGroup>
+                        {errors.equipment_choice && <p className="text-red-500">{errors.equipment_choice}</p>}
+                        {showEquipmentOther && (
+                            <Input
+                                placeholder="Другое — укажите технику"
+                                value={data.equipment_other_text}
+                                onChange={(e) => setData("equipment_other_text", e.target.value)}
+                                aria-label="Укажите другую технику"
+                            />
+                        )}
+                        {errors.equipment_other_text && <p className="text-red-500">{errors.equipment_other_text}</p>}
+                    </div>
+
+                    {/* 7. Орошение */}
+                    <div className="grid gap-3">
+                        <Label>7. Укажите доступный источник орошения:</Label>
                         <div className="grid md:grid-cols-4 gap-2">
                             {IRRIGATION_OPTIONS.map(([label, key]) => (
                                 <div key={key} className="flex items-center gap-2">
@@ -664,9 +598,9 @@ const FirstForm: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* 9. Пчеловодство */}
+                    {/* 8. Пчеловодство */}
                     <div className="grid gap-3">
-                        <Label>9. Пчеловодство</Label>
+                        <Label>8. Пчеловодство</Label>
                         <div className="flex items-center gap-2">
                             <Checkbox
                                 id="beekeeping"
@@ -675,14 +609,14 @@ const FirstForm: React.FC = () => {
                                 aria-label="Выбрать пчеловодство"
                             />
                             <Label htmlFor="beekeeping">
-                                Если Вы выбираете «Пчеловодство», предусматриваются ульи и стартовый комплект оборудования.
+                                При выборе «Пчеловодство» предусматриваются ульи и стартовый комплект оборудования.
                             </Label>
                         </div>
                     </div>
 
-                    {/* 10. Склад */}
+                    {/* 9. Склад */}
                     <div className="grid gap-3">
-                        <Label>10. Есть ли у Вас склад для хранения?</Label>
+                        <Label>9. Есть ли у Вас склад для хранения?</Label>
                         <RadioGroup
                             value={data.has_storage ? "Да" : "Нет"}
                             onValueChange={(v) => setData("has_storage", v === "Да")}
@@ -715,9 +649,9 @@ const FirstForm: React.FC = () => {
                         )}
                     </div>
 
-                    {/* 11. Холодильная камера */}
+                    {/* 10. Холодильная камера */}
                     <div className="grid gap-3">
-                        <Label>11. Есть ли у Вас доступ к холодильной камере?</Label>
+                        <Label>10. Есть ли у Вас доступ к холодильной камере?</Label>
                         <RadioGroup
                             value={data.has_refrigerator ? "Да" : "Нет"}
                             onValueChange={(v) => setData("has_refrigerator", v === "Да")}
@@ -734,6 +668,18 @@ const FirstForm: React.FC = () => {
                             </div>
                         </RadioGroup>
                     </div>
+
+                    {/* 11. Подпись */}
+                    <div className="grid gap-3">
+                        <Label>Подпись участника опроса (Ф.И.О.)</Label>
+                        <Input
+                            placeholder="Подпись"
+                            value={data.signature}
+                            onChange={(e) => setData("signature", e.target.value)}
+                            aria-label="Подпись участника опроса (Ф.И.О.)"
+                        />
+                        {errors.signature && <p className="text-red-500">{errors.signature}</p>}
+                    </div>
                 </CardContent>
 
                 <CardFooter className="flex gap-2">
@@ -749,4 +695,4 @@ const FirstForm: React.FC = () => {
     );
 };
 
-export default FirstForm;
+export default SecondForm;

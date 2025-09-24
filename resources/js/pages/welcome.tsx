@@ -1,30 +1,23 @@
 import FirstForm from '@/components/firstForm';
+import SecondForm from '@/components/secondForm';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
+import { Toaster } from "@/components/ui/sonner"
+
 export default function Welcome() {
     const { auth } = usePage<SharedData>().props;
-
     return (
         <>
-            <Head title="Welcome">
+            <Head title="Форма">
                 <link rel="preconnect" href="https://fonts.bunny.net" />
                 <link
                     href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600"
                     rel="stylesheet"
                 />
             </Head>
+            <Toaster />
             {!auth.user ? (
                 <div className="flex justify-center md:justify-end">
                     <div className={'mt-5'}>
@@ -54,38 +47,7 @@ export default function Welcome() {
                             <FirstForm />
                         </TabsContent>
                         <TabsContent value="password">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Password</CardTitle>
-                                    <CardDescription>
-                                        Change your password here. After saving,
-                                        you&apos;ll be logged out.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="grid gap-6">
-                                    <div className="grid gap-3">
-                                        <Label htmlFor="tabs-demo-current">
-                                            Current password
-                                        </Label>
-                                        <Input
-                                            id="tabs-demo-current"
-                                            type="password"
-                                        />
-                                    </div>
-                                    <div className="grid gap-3">
-                                        <Label htmlFor="tabs-demo-new">
-                                            New password
-                                        </Label>
-                                        <Input
-                                            id="tabs-demo-new"
-                                            type="password"
-                                        />
-                                    </div>
-                                </CardContent>
-                                <CardFooter>
-                                    <Button>Save password</Button>
-                                </CardFooter>
-                            </Card>
+                            <SecondForm />
                         </TabsContent>
                     </Tabs>
                 </div>
