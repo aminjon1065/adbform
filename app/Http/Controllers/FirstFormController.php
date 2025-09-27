@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\FirstFormRequest;
 use App\Models\FirstForm;
 use Illuminate\Http\RedirectResponse;
+use Inertia\Inertia;
 
 class FirstFormController extends Controller
 {
@@ -14,14 +15,12 @@ class FirstFormController extends Controller
 
         // seeds / seedlings: нормализуем и фильтруем пустые записи
         $seeds = !empty($v['seeds'])
-            ? array_values(array_filter($v['seeds'], fn ($i) =>
-                isset($i['key'], $i['area']) && $i['area'] !== ''
+            ? array_values(array_filter($v['seeds'], fn($i) => isset($i['key'], $i['area']) && $i['area'] !== ''
             ))
             : null;
 
         $seedlings = !empty($v['seedlings'])
-            ? array_values(array_filter($v['seedlings'], fn ($i) =>
-                isset($i['key'], $i['area']) && $i['area'] !== ''
+            ? array_values(array_filter($v['seedlings'], fn($i) => isset($i['key'], $i['area']) && $i['area'] !== ''
             ))
             : null;
 
@@ -30,7 +29,7 @@ class FirstFormController extends Controller
 
         // plot_ha: безопасное приведение под DECIMAL(8,2)
         $plotHa = (isset($v['plot_ha']) && $v['plot_ha'] !== '')
-            ? number_format((float) $v['plot_ha'], 2, '.', '')
+            ? number_format((float)$v['plot_ha'], 2, '.', '')
             : null;
 
         // (опционально) проверка согласованности семьи
@@ -44,45 +43,53 @@ class FirstFormController extends Controller
         }
 
         FirstForm::create([
-            'user_id'                 => optional($request->user())->id,
+            'user_id' => optional($request->user())->id,
 
-            'meeting_date'            => $v['meeting_date'], // Y-m-d
-            'rayon'                   => $v['rayon'],
-            'jamoat'                  => $v['jamoat'],
-            'selo'                    => $v['selo'] ?? null,
+            'meeting_date' => $v['meeting_date'], // Y-m-d
+            'rayon' => $v['rayon'],
+            'jamoat' => $v['jamoat'],
+            'selo' => $v['selo'] ?? null,
 
-            'accept'                  => (bool) $v['accept'],
+            'accept' => (bool)$v['accept'],
 
-            'full_name'               => $v['full_name'],
-            'age'                     => (int) $v['age'],
-            'phone'                   => $v['phone'],
+            'full_name' => $v['full_name'],
+            'age' => (int)$v['age'],
+            'phone' => $v['phone'],
 
-            'family_count'            => (int) $v['family_count'],
-            'children_count'          => (int) ($v['children_count'] ?? 0),
-            'elderly_count'           => (int) ($v['elderly_count'] ?? 0),
-            'able_count'              => (int) ($v['able_count'] ?? 0),
+            'family_count' => (int)$v['family_count'],
+            'children_count' => (int)($v['children_count'] ?? 0),
+            'elderly_count' => (int)($v['elderly_count'] ?? 0),
+            'able_count' => (int)($v['able_count'] ?? 0),
 
-            'income'                  => $v['income'],
+            'income' => $v['income'],
 
-            'plot_ha'                 => $plotHa,
+            'plot_ha' => $plotHa,
 
-            'agriculture_experience'  => $v['agriculture_experience'],
+            'agriculture_experience' => $v['agriculture_experience'],
 
-            'seeds'                   => $seeds,      // cast: array/json
-            'seedlings'               => $seedlings,  // cast: array/json
+            'seeds' => $seeds,      // cast: array/json
+            'seedlings' => $seedlings,  // cast: array/json
 
-            'irrigation_sources'      => $irrigation,
+            'irrigation_sources' => $irrigation,
 
-            'beekeeping'              => (bool) ($v['beekeeping'] ?? false),
+            'beekeeping' => (bool)($v['beekeeping'] ?? false),
 
-            'has_storage'             => (bool) $v['has_storage'],
-            'storage_area_sqm'        => $v['has_storage']
-                ? (isset($v['storage_area_sqm']) ? (int) $v['storage_area_sqm'] : null)
+            'has_storage' => (bool)$v['has_storage'],
+            'storage_area_sqm' => $v['has_storage']
+                ? (isset($v['storage_area_sqm']) ? (int)$v['storage_area_sqm'] : null)
                 : null,
 
-            'has_refrigerator'        => (bool) $v['has_refrigerator'],
+            'has_refrigerator' => (bool)$v['has_refrigerator'],
         ]);
 
         return back()->with('success', 'Анкета сохранена.');
+    }
+
+    public function index()
+    {
+        $firstForms = FirstForm::all();
+        return Inertia::render('form-first/index', [
+            'firstForms' => $firstForms,
+        ]);
     }
 }
