@@ -58,7 +58,6 @@ return new class extends Migration {
             $table->boolean('has_refrigerator')->default(false);
 
             // 11. Подпись (опционально)
-            $table->string('signature', 200)->nullable();
 
             $table->timestamps();
         });

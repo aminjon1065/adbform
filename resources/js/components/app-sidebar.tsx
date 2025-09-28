@@ -12,14 +12,19 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { LayoutGrid } from 'lucide-react';
+import { Flower, Flower2Icon, LayoutGrid } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
+        title: 'Форма работниц',
+        href: '/first-forms',
+        icon: Flower,
+    },
+    {
+        title: 'Форма руководительниц',
+        href: '/second-forms',
+        icon: Flower2Icon,
     },
 ];
 
@@ -30,7 +35,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link href={'/first-forms'} prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>

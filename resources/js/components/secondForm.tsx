@@ -44,7 +44,6 @@ type FormData = {
     has_storage: boolean;
     storage_area_sqm: string;
     has_refrigerator: boolean;
-    signature: string;
 };
 
 const onlyDigits = (s: string) => s.replace(/\D/g, "");
@@ -180,7 +179,6 @@ const SecondForm: React.FC = () => {
         has_storage: false,
         storage_area_sqm: "",
         has_refrigerator: false,
-        signature: "",
     });
 
     const [openDate, setOpenDate] = useState(false);
@@ -262,11 +260,6 @@ const SecondForm: React.FC = () => {
             setError("equipment_other_text", "Укажите корректное название техники (минимум 3 символа).");
             ok = false;
         }
-        if (!data.signature.trim()) {
-            setError("signature", "Укажите подпись (Ф.И.О.).");
-            ok = false;
-        }
-
         return ok;
     };
 
@@ -294,7 +287,6 @@ const SecondForm: React.FC = () => {
             has_storage: false,
             storage_area_sqm: "",
             has_refrigerator: false,
-            signature: "",
         }));
         Object.keys(errors).forEach((key) => setError(key, ""));
     };
@@ -335,7 +327,6 @@ const SecondForm: React.FC = () => {
             has_storage: !!d.has_storage,
             storage_area_sqm: d.has_storage ? (d.storage_area_sqm ? Number(d.storage_area_sqm) : 0) : null,
             has_refrigerator: !!d.has_refrigerator,
-            signature: d.signature || null,
         }));
 
         post("/second-forms", {
@@ -667,18 +658,6 @@ const SecondForm: React.FC = () => {
                                 <Label htmlFor="fr_no">Нет</Label>
                             </div>
                         </RadioGroup>
-                    </div>
-
-                    {/* 11. Подпись */}
-                    <div className="grid gap-3">
-                        <Label>Подпись участника опроса (Ф.И.О.)</Label>
-                        <Input
-                            placeholder="Подпись"
-                            value={data.signature}
-                            onChange={(e) => setData("signature", e.target.value)}
-                            aria-label="Подпись участника опроса (Ф.И.О.)"
-                        />
-                        {errors.signature && <p className="text-red-500">{errors.signature}</p>}
                     </div>
                 </CardContent>
 

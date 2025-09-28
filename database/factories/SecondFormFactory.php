@@ -83,10 +83,6 @@ class SecondFormFactory extends Factory
 
         // 10. холодильная
         $hasRefrigerator = $faker->boolean(40);
-
-        // 11. подпись (опц.)
-        $signature = $faker->boolean(70) ? $leaderFullName : null;
-
         return [
             'user_id'                => $faker->boolean(60) ? User::factory() : null,
 
@@ -121,7 +117,6 @@ class SecondFormFactory extends Factory
 
             'has_refrigerator'       => $hasRefrigerator,
 
-            'signature'              => $signature,
         ];
     }
 

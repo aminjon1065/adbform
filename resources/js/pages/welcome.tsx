@@ -30,7 +30,9 @@ export default function Welcome() {
                 <div className="flex justify-center md:justify-end">
                     <div className={'mt-5'}>
                         <p>{auth.user.name}</p>
-                        <p>Позиция</p>
+                        <Link href={'first-forms'}>
+                            <Button>Просмотр данных</Button>
+                        </Link>
                     </div>
                 </div>
             )}
