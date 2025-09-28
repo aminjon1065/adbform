@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SecondForm extends Model
 {
@@ -90,8 +91,13 @@ class SecondForm extends Model
                 ->orWhere('leader_phone', 'like', "%{$t}%")
                 ->orWhereRaw('LOWER(equipment_choice) LIKE ?', ["%{$t}%"])
                 ->orWhereRaw('LOWER(agriculture_experience) LIKE ?', ["%{$t}%"]);
-        });
+        })
+            ->orWhereHas('user', function ($uq) use ($t) {
+                $uq->whereRaw('LOWER(name) LIKE ?', ["%{$t}%"])
+                    ->orWhereRaw('LOWER(email) LIKE ?', ["%{$t}%"]);
+            });
     }
+
 
     public function scopeDateFrom(Builder $q, ?string $ymd): Builder
     {
@@ -166,4 +172,9 @@ class SecondForm extends Model
             ->hasRefrigerator($filters['has_refrigerator'] ?? null)// ждёт bool|null
             ->orderSafe($filters['sort'] ?? 'created_at', $filters['order'] ?? 'desc');
     }
+    public function user():BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
 }

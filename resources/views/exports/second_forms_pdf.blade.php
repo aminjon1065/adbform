@@ -63,7 +63,6 @@
         <th>Пчёлы</th>
         <th>Склад</th>
         <th>Холод.</th>
-        <th>Подпись</th>
         <th>Создано</th>
     </tr>
     </thead>
@@ -101,7 +100,6 @@
             <td>{{ $it->beekeeping ? 'Да' : 'Нет' }}</td>
             <td>{{ $it->has_storage ? ('Да' . ($it->storage_area_sqm ? ', '.$it->storage_area_sqm.' м²' : '')) : 'Нет' }}</td>
             <td>{{ $it->has_refrigerator ? 'Да' : 'Нет' }}</td>
-            <td>{{ $it->signature }}</td>
             <td>{{ optional($it->created_at)->format('Y-m-d H:i') }}</td>
         </tr>
     @empty

@@ -52,4 +52,8 @@ class User extends Authenticatable
     {
         return $this->hasOne(FirstForm::class);
     }
+    public function secondForm(): HasOne
+    {
+        return $this->hasOne(SecondForm::class);
+    }
 }

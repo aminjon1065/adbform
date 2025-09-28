@@ -47,7 +47,11 @@ class FirstForm extends Model
                 ->orWhereRaw('LOWER(jamoat) LIKE ?', ["%{$t}%"])
                 ->orWhereRaw('LOWER(selo) LIKE ?', ["%{$t}%"])
                 ->orWhere('phone', 'like', "%{$t}%");
-        });
+        })
+            ->orWhereHas('user', function ($uq) use ($t) {
+                $uq->whereRaw('LOWER(name) LIKE ?', ["%{$t}%"])
+                    ->orWhereRaw('LOWER(email) LIKE ?', ["%{$t}%"]);
+            });
     }
 
     /** Диапазон даты встречи */

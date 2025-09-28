@@ -133,7 +133,6 @@ class SecondFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldA
             'Склад (есть?)',
             'Площадь склада, м²',
             'Холод. камера',
-            'Подпись',
             'Создано',
         ];
     }
@@ -167,7 +166,6 @@ class SecondFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldA
             $row->has_storage ? 'Да' : 'Нет',
             $row->has_storage ? $row->storage_area_sqm : null,
             $row->has_refrigerator ? 'Да' : 'Нет',
-            $row->signature,
             optional($row->created_at)->format('Y-m-d H:i'),
         ];
     }

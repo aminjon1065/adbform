@@ -35,7 +35,7 @@ import {
     Search,
 } from 'lucide-react';
 import React, { JSX, useEffect, useMemo, useState } from 'react';
-import { BreadcrumbItem } from '@/types';
+import { BreadcrumbItem, User } from '@/types';
 
 // ===== Types =====
 export type SecondFormRow = {
@@ -66,6 +66,7 @@ export type SecondFormRow = {
 
     created_at?: string;
     updated_at?: string;
+    user: User;
 };
 
 export type Paginator<T> = {
@@ -462,6 +463,7 @@ const Index: React.FC<IndexProps> = (props) => {
                                             <TableHead>Пчеловодство</TableHead>
                                             <TableHead>Склад</TableHead>
                                             <TableHead>Холод.</TableHead>
+                                            <TableHead>Заполнил</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -557,6 +559,7 @@ const Index: React.FC<IndexProps> = (props) => {
                                                         )}
                                                     </Badge>
                                                 </TableCell>
+                                                <TableCell>{it.user?.name}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>

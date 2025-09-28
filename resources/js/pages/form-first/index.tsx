@@ -18,7 +18,7 @@ import {
     ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search,
 } from "lucide-react";
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
+import type { BreadcrumbItem, User } from '@/types';
 
 /* ================= Types ================= */
 
@@ -40,6 +40,7 @@ export type FirstFormRow = {
     has_refrigerator: boolean;
     created_at?: string;
     updated_at?: string;
+    user:User
 };
 
 
@@ -107,7 +108,6 @@ const PER_PAGE = ["10", "15", "25", "50", "100"] as const;
 /* =============== Component =============== */
 
 const Index: React.FC<IndexProps> = (props) => {
-    console.log("props", props);
     // Берём данные либо из пропсов, либо из usePage (Inertia)
     const pageProps = usePage<{ forms?: Paginator<FirstFormRow>; firstForms?: Paginator<FirstFormRow>; filters?: Filters; available?: Available }>().props;
 

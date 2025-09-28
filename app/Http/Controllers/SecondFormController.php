@@ -177,6 +177,7 @@ class SecondFormController extends Controller
         $perPage = (int)($validated['per_page'] ?? 15);
 
         $builder = SecondForm::query()
+            ->with(['user'])
             ->search($validated['q'] ?? null)
             ->dateFrom($validated['date_from'] ?? null)
             ->dateTo($validated['date_to'] ?? null)
