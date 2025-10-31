@@ -29,7 +29,6 @@ class SecondFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldA
         'onion'    => 'Лук',
         'beet'     => 'Свёкла',
         'potato'   => 'Картофель',
-        'other'    => 'Другое',
     ];
 
     private const SEEDLING_LABELS = [
@@ -39,7 +38,6 @@ class SecondFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldA
         'almond'    => 'Миндаль',
         'persimmon' => 'Хурма',
         'berries'   => 'Ягодные культуры',
-        'other'     => 'Другое',
     ];
 
     private function labelIrrigation(?array $arr): string
@@ -50,17 +48,54 @@ class SecondFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldA
             ->implode(', ');
     }
 
-    private function labelPairs(?array $items, array $dict): string
+    /**
+     * Извлечь площадь для конкретного ключа из массива items
+     */
+    private function getArea(?array $items, string $key): string
     {
         if (!is_array($items) || !$items) return '';
-        return collect($items)
-            ->map(function ($i) use ($dict) {
-                $key  = $i['key']  ?? '';
-                $area = $i['area'] ?? '';
-                $label = $dict[$key] ?? $key;
-                return trim($label.': '.$area);
-            })
-            ->implode(', ');
+        foreach ($items as $item) {
+            if (($item['key'] ?? '') === $key) {
+                return (string)($item['area'] ?? '');
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Извлечь "other" записи (other_1, other_2, etc.)
+     * Возвращает массив из 4 элементов: [['name'=>..., 'area'=>...], ...]
+     */
+    private function getOtherEntries(?array $items): array
+    {
+        if (!is_array($items) || !$items) {
+            return [
+                ['name' => '', 'area' => ''],
+                ['name' => '', 'area' => ''],
+                ['name' => '', 'area' => ''],
+                ['name' => '', 'area' => ''],
+            ];
+        }
+
+        $others = [];
+        foreach (['other_1', 'other_2', 'other_3', 'other_4'] as $key) {
+            $found = false;
+            foreach ($items as $item) {
+                if (($item['key'] ?? '') === $key) {
+                    $others[] = [
+                        'name' => $item['name'] ?? '',
+                        'area' => $item['area'] ?? '',
+                    ];
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                $others[] = ['name' => '', 'area' => ''];
+            }
+        }
+
+        return $others;
     }
 
     public function query()
@@ -121,10 +156,40 @@ class SecondFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldA
             'ФИО руководителя',
             'Возраст рук.',
             'Телефон рук.',
-            'Площадь ДХ, га',
+            'Площадь ДХ, сотых',
             'Опыт',
-            'Семена (ключ:площадь)',
-            'Саженцы (ключ:площадь)',
+            // Семена (6 основных культур)
+            'Помидор, сотых',
+            'Болгарский перец, сотых',
+            'Огурец, сотых',
+            'Лук, сотых',
+            'Свёкла, сотых',
+            'Картофель, сотых',
+            // Семена: Другое (4 варианта)
+            'Другое 1 (название)',
+            'Другое 1, сотых',
+            'Другое 2 (название)',
+            'Другое 2, сотых',
+            'Другое 3 (название)',
+            'Другое 3, сотых',
+            'Другое 4 (название)',
+            'Другое 4, сотых',
+            // Саженцы (6 основных культур)
+            'Абрикос, сотых',
+            'Яблоня, сотых',
+            'Виноград, сотых',
+            'Миндаль, сотых',
+            'Хурма, сотых',
+            'Ягодные культуры, сотых',
+            // Саженцы: Другое (4 варианта)
+            'Другое 1 (название)',
+            'Другое 1, сотых',
+            'Другое 2 (название)',
+            'Другое 2, сотых',
+            'Другое 3 (название)',
+            'Другое 3, сотых',
+            'Другое 4 (название)',
+            'Другое 4, сотых',
             'Техника (код)',
             'Техника (метка)',
             'Другое (техника)',
@@ -139,9 +204,43 @@ class SecondFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldA
 
     public function map($row): array
     {
-        $seeds      = $this->labelPairs($row->seeds, self::SEED_LABELS);
-        $seedlings  = $this->labelPairs($row->seedlings, self::SEEDLING_LABELS);
         $irrigation = $this->labelIrrigation($row->irrigation_sources);
+
+        // Извлечь площади для семян (6 основных)
+        $seedAreas = [
+            $this->getArea($row->seeds, 'tomato'),
+            $this->getArea($row->seeds, 'pepper'),
+            $this->getArea($row->seeds, 'cucumber'),
+            $this->getArea($row->seeds, 'onion'),
+            $this->getArea($row->seeds, 'beet'),
+            $this->getArea($row->seeds, 'potato'),
+        ];
+
+        // Извлечь "другие" для семян (4 варианта)
+        $seedOthers = $this->getOtherEntries($row->seeds);
+        $seedOtherFlat = [];
+        foreach ($seedOthers as $other) {
+            $seedOtherFlat[] = $other['name'];
+            $seedOtherFlat[] = $other['area'];
+        }
+
+        // Извлечь площади для саженцев (6 основных)
+        $seedlingAreas = [
+            $this->getArea($row->seedlings, 'apricot'),
+            $this->getArea($row->seedlings, 'apple'),
+            $this->getArea($row->seedlings, 'grape'),
+            $this->getArea($row->seedlings, 'almond'),
+            $this->getArea($row->seedlings, 'persimmon'),
+            $this->getArea($row->seedlings, 'berries'),
+        ];
+
+        // Извлечь "другие" для саженцев (4 варианта)
+        $seedlingOthers = $this->getOtherEntries($row->seedlings);
+        $seedlingOtherFlat = [];
+        foreach ($seedlingOthers as $other) {
+            $seedlingOtherFlat[] = $other['name'];
+            $seedlingOtherFlat[] = $other['area'];
+        }
 
         return [
             $row->id,
@@ -156,12 +255,18 @@ class SecondFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldA
             $row->leader_phone,
             $row->farm_plot_ha,
             $row->agriculture_experience,
-            $seeds,            // <-- русские метки
-            $seedlings,        // <-- русские метки
-            $row->equipment_choice,       // код
-            $row->equipment_choice_label, // уже русская метка из аксессора
+            // Семена: 6 основных культур
+            ...$seedAreas,
+            // Семена: 4 "других" (name, area, name, area, ...)
+            ...$seedOtherFlat,
+            // Саженцы: 6 основных культур
+            ...$seedlingAreas,
+            // Саженцы: 4 "других" (name, area, name, area, ...)
+            ...$seedlingOtherFlat,
+            $row->equipment_choice,
+            $row->equipment_choice_label,
             $row->equipment_other_text,
-            $irrigation,       // <-- русские метки
+            $irrigation,
             $row->beekeeping ? 'Да' : 'Нет',
             $row->has_storage ? 'Да' : 'Нет',
             $row->has_storage ? $row->storage_area_sqm : null,

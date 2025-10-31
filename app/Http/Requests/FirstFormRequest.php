@@ -14,8 +14,8 @@ class FirstFormRequest extends FormRequest
 
     public function rules(): array
     {
-        $seedKeys = ['tomato', 'pepper', 'cucumber', 'onion', 'beet', 'potato', 'other'];
-        $seedlingKeys = ['apricot', 'apple', 'grape', 'almond', 'persimmon', 'berries', 'other'];
+        $seedKeys = ['tomato', 'pepper', 'cucumber', 'onion', 'beet', 'potato', 'other_1', 'other_2', 'other_3', 'other_4'];
+        $seedlingKeys = ['apricot', 'apple', 'grape', 'almond', 'persimmon', 'berries', 'other_1', 'other_2', 'other_3', 'other_4'];
         $irrigationSet = ['none', 'well', 'pump', 'canal'];
         $expSet = ['овощеводство', 'садоводство', 'пчеловодство', 'нет опыта'];
 
@@ -41,24 +41,26 @@ class FirstFormRequest extends FormRequest
             'elderly_count' => ['nullable', 'integer', 'min:0'],
             'able_count' => ['nullable', 'integer', 'min:0'],
 
-            // 4. Доход
-            'income' => ['required', 'string', 'max:120'],
+            // 4. Доход (может быть несколько источников, разделённых запятыми)
+            'income' => ['required', 'string', 'max:255'],
 
-            // 5. Площадь участка
+            // 5. Площадь участка (теперь в сотых)
             'plot_ha' => ['nullable', 'numeric', 'min:0'],
 
             // 6. Опыт
             'agriculture_experience' => ['required', Rule::in($expSet)],
 
-            // 7. Семена (если опыт овощеводство — фронт уже показывает блок, но сервер можно не жёстко ограничивать)
+            // 7. Семена (если опыт овощеводство)
             'seeds' => ['nullable', 'array'],
             'seeds.*.key' => ['required_with:seeds', 'string', Rule::in($seedKeys)],
             'seeds.*.area' => ['required_with:seeds', 'string', 'max:20'],
+            'seeds.*.name' => ['nullable', 'string', 'max:120'], // для other_1, other_2, etc.
 
             // 8. Саженцы
             'seedlings' => ['nullable', 'array'],
             'seedlings.*.key' => ['required_with:seedlings', 'string', Rule::in($seedlingKeys)],
             'seedlings.*.area' => ['required_with:seedlings', 'string', 'max:20'],
+            'seedlings.*.name' => ['nullable', 'string', 'max:120'], // для other_1, other_2, etc.
 
             // 9. Орошение (мульти)
             'irrigation_sources' => ['required', 'array'],

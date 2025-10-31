@@ -15,8 +15,8 @@ class SecondFormRequest extends FormRequest
 
     public function rules(): array
     {
-        $seedKeys = ['tomato','pepper','cucumber','onion','beet','potato','other'];
-        $seedlingKeys = ['apricot','apple','grape','almond','persimmon','berries','other'];
+        $seedKeys = ['tomato','pepper','cucumber','onion','beet','potato','other_1','other_2','other_3','other_4'];
+        $seedlingKeys = ['apricot','apple','grape','almond','persimmon','berries','other_1','other_2','other_3','other_4'];
         $irrigationSet = ['none','well','pump','canal'];
         $expSet = ['овощеводство','садоводство','пчеловодство','нет опыта'];
         $equipmentSet = ['freza','seeder','cultivator','other'];
@@ -37,7 +37,7 @@ class SecondFormRequest extends FormRequest
             'leader_age' => ['required','integer','between:18,100'],
             'leader_phone' => ['required','digits:9'],
 
-            // Площадь хоз-ва
+            // Площадь хоз-ва (теперь в сотых)
             'farm_plot_ha' => ['nullable','numeric','min:0'],
 
             // Опыт
@@ -47,11 +47,13 @@ class SecondFormRequest extends FormRequest
             'seeds' => ['nullable','array'],
             'seeds.*.key' => ['required_with:seeds','string', Rule::in($seedKeys)],
             'seeds.*.area' => ['required_with:seeds','string','max:20'],
+            'seeds.*.name' => ['nullable','string','max:120'], // для other_1, other_2, etc.
 
             // Саженцы
             'seedlings' => ['nullable','array'],
             'seedlings.*.key' => ['required_with:seedlings','string', Rule::in($seedlingKeys)],
             'seedlings.*.area' => ['required_with:seedlings','string','max:20'],
+            'seedlings.*.name' => ['nullable','string','max:120'], // для other_1, other_2, etc.
 
             // Техника
             'equipment_choice' => ['required', Rule::in($equipmentSet)],
