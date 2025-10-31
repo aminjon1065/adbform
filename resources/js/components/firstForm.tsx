@@ -16,11 +16,12 @@ import { format, parse } from "date-fns";
 import { toast } from "sonner";
 
 /* ===================== Types & helpers ===================== */
-type VegKey = "tomato" | "pepper" | "cucumber" | "onion" | "beet" | "potato" | "other";
-type GardenKey = "apricot" | "apple" | "grape" | "almond" | "persimmon" | "berries" | "other";
+type VegKey = "tomato" | "pepper" | "cucumber" | "onion" | "beet" | "potato";
+type GardenKey = "apricot" | "apple" | "grape" | "almond" | "persimmon" | "berries";
 type IrrKey = "none" | "well" | "pump" | "canal";
 
 type MarkedMap<K extends string> = Record<K, { checked: boolean; area: string }>;
+type OtherEntry = { name: string; area: string };
 
 type FormData = {
     meeting_date: string | null;
@@ -35,12 +36,14 @@ type FormData = {
     children_count: string;
     elderly_count: string;
     able_count: string;
-    income: string;
+    income: string[];
     income_other_text: string;
     plot_ha: string;
     agriculture_experience: "" | "овощеводство" | "садоводство" | "пчеловодство" | "нет опыта";
     veg: MarkedMap<VegKey>;
+    veg_other: OtherEntry[];
     garden: MarkedMap<GardenKey>;
+    garden_other: OtherEntry[];
     irrigation_sources: IrrKey[];
     beekeeping: boolean;
     has_storage: boolean;
@@ -64,7 +67,6 @@ const VEG_OPTIONS: Array<[string, VegKey]> = [
     ["Лук", "onion"],
     ["Свёкла", "beet"],
     ["Картофель", "potato"],
-    ["Другое", "other"],
 ];
 
 const GARDEN_OPTIONS: Array<[string, GardenKey]> = [
@@ -74,7 +76,6 @@ const GARDEN_OPTIONS: Array<[string, GardenKey]> = [
     ["Миндаль", "almond"],
     ["Хурма", "persimmon"],
     ["Ягодные культуры", "berries"],
-    ["Другое", "other"],
 ];
 
 const IRRIGATION_OPTIONS: Array<[string, IrrKey]> = [
@@ -125,19 +126,56 @@ function MarkedItemSection<K extends string>({
                         </Label>
                         <Input
                             className="ml-auto"
-                            placeholder="га"
+                            placeholder="сотых"
                             value={data[key].area}
                             onChange={(e) =>
                                 setItem(key, { area: e.target.value.replace(/[^\d.,]/g, "") })
                             }
                             disabled={!data[key].checked}
                             required={data[key].checked}
-                            aria-label={`Площадь для ${lbl} в гектарах`}
+                            aria-label={`Площадь для ${lbl} в сотых`}
                         />
                     </div>
                 ))}
             </div>
             <p className="text-sm text-muted-foreground">{note}</p>
+            {error && <p className="text-red-500">{error}</p>}
+        </div>
+    );
+}
+
+/* ===================== OtherEntriesSection Component ===================== */
+function OtherEntriesSection({
+                                 entries,
+                                 setEntry,
+                                 error,
+                             }: {
+    entries: OtherEntry[];
+    setEntry: (index: number, field: "name" | "area", value: string) => void;
+    error?: string;
+}) {
+    return (
+        <div className="grid gap-3">
+            <Label>Другое (указать название)</Label>
+            <div className="grid gap-3">
+                {entries.map((entry, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{idx + 1}.</span>
+                        <Input
+                            placeholder="название культуры"
+                            value={entry.name}
+                            onChange={(e) => setEntry(idx, "name", e.target.value)}
+                            aria-label={`Название культуры ${idx + 1}`}
+                        />
+                        <Input
+                            placeholder="сотых"
+                            value={entry.area}
+                            onChange={(e) => setEntry(idx, "area", e.target.value.replace(/[^\d.,]/g, ""))}
+                            aria-label={`Площадь для культуры ${idx + 1} в сотых`}
+                        />
+                    </div>
+                ))}
+            </div>
             {error && <p className="text-red-500">{error}</p>}
         </div>
     );
@@ -158,7 +196,7 @@ const FirstForm: React.FC = () => {
         children_count: "",
         elderly_count: "",
         able_count: "",
-        income: "",
+        income: [],
         income_other_text: "",
         plot_ha: "",
         agriculture_experience: "",
@@ -169,8 +207,13 @@ const FirstForm: React.FC = () => {
             onion: { checked: false, area: "" },
             beet: { checked: false, area: "" },
             potato: { checked: false, area: "" },
-            other: { checked: false, area: "" },
         },
+        veg_other: [
+            { name: "", area: "" },
+            { name: "", area: "" },
+            { name: "", area: "" },
+            { name: "", area: "" },
+        ],
         garden: {
             apricot: { checked: false, area: "" },
             apple: { checked: false, area: "" },
@@ -178,8 +221,13 @@ const FirstForm: React.FC = () => {
             almond: { checked: false, area: "" },
             persimmon: { checked: false, area: "" },
             berries: { checked: false, area: "" },
-            other: { checked: false, area: "" },
         },
+        garden_other: [
+            { name: "", area: "" },
+            { name: "", area: "" },
+            { name: "", area: "" },
+            { name: "", area: "" },
+        ],
         irrigation_sources: [],
         beekeeping: false,
         has_storage: false,
@@ -194,12 +242,33 @@ const FirstForm: React.FC = () => {
 
     const showVegetable = data.agriculture_experience === "овощеводство";
     const showGarden = data.agriculture_experience === "садоводство";
-    const showIncomeOther = data.income === "other";
+    const showIncomeOther = data.income.includes("other");
 
     const setVegItem = (key: VegKey, patch: Partial<{ checked: boolean; area: string }>) =>
         setData("veg", { ...data.veg, [key]: { ...data.veg[key], ...patch } });
     const setGardenItem = (key: GardenKey, patch: Partial<{ checked: boolean; area: string }>) =>
         setData("garden", { ...data.garden, [key]: { ...data.garden[key], ...patch } });
+
+    const setVegOtherEntry = (index: number, field: "name" | "area", value: string) => {
+        const updated = [...data.veg_other];
+        updated[index] = { ...updated[index], [field]: value };
+        setData("veg_other", updated);
+    };
+
+    const setGardenOtherEntry = (index: number, field: "name" | "area", value: string) => {
+        const updated = [...data.garden_other];
+        updated[index] = { ...updated[index], [field]: value };
+        setData("garden_other", updated);
+    };
+
+    const toggleIncome = (value: string, checked: boolean) => {
+        setData(
+            "income",
+            checked
+                ? [...data.income, value]
+                : data.income.filter((x) => x !== value),
+        );
+    };
 
     const toggleIrrigation = (key: IrrKey, checked: boolean) => {
         if (key === "none" && checked) {
@@ -252,29 +321,45 @@ const FirstForm: React.FC = () => {
             setError("family_count", "Укажите общее количество членов семьи.");
             valid = false;
         }
-        if (!data.income) {
+        if (data.income.length === 0) {
             setError("income", "Укажите источник дохода.");
             valid = false;
         }
-        if (data.income === "other" && !data.income_other_text.trim()) {
+        if (data.income.includes("other") && !data.income_other_text.trim()) {
             setError("income_other_text", "Укажите источник дохода для 'Другое'.");
             valid = false;
         }
         if (!data.plot_ha) {
-            setError("plot_ha", "Укажите площадь участка (га).");
+            setError("plot_ha", "Укажите площадь участка (сотых).");
             valid = false;
         }
         if (showVegetable && anyVegChecked) {
             const miss = Object.values(data.veg).some((v) => v.checked && !v.area);
             if (miss) {
-                setError("seeds", "Для выбранных культур в овощеводстве укажите площадь (га).");
+                setError("seeds", "Для выбранных культур в овощеводстве укажите площадь (сотых).");
+                valid = false;
+            }
+        }
+        if (showVegetable) {
+            const vegOtherWithData = data.veg_other.filter((e) => e.name.trim() || e.area.trim());
+            const vegOtherIncomplete = vegOtherWithData.some((e) => !e.name.trim() || !e.area.trim());
+            if (vegOtherIncomplete) {
+                setError("veg_other", "Для поля 'Другое' укажите и название культуры, и площадь.");
                 valid = false;
             }
         }
         if (showGarden && anyGardenChecked) {
             const miss = Object.values(data.garden).some((v) => v.checked && !v.area);
             if (miss) {
-                setError("seedlings", "Для выбранных культур в садоводстве укажите площадь (га).");
+                setError("seedlings", "Для выбранных культур в садоводстве укажите площадь (сотых).");
+                valid = false;
+            }
+        }
+        if (showGarden) {
+            const gardenOtherWithData = data.garden_other.filter((e) => e.name.trim() || e.area.trim());
+            const gardenOtherIncomplete = gardenOtherWithData.some((e) => !e.name.trim() || !e.area.trim());
+            if (gardenOtherIncomplete) {
+                setError("garden_other", "Для поля 'Другое' укажите и название культуры, и площадь.");
                 valid = false;
             }
         }
@@ -302,12 +387,24 @@ const FirstForm: React.FC = () => {
             children_count: "",
             elderly_count: "",
             able_count: "",
-            income: "",
+            income: [],
             income_other_text: "",
             plot_ha: "",
             agriculture_experience: "",
             veg: resetMarked(d.veg),
+            veg_other: [
+                { name: "", area: "" },
+                { name: "", area: "" },
+                { name: "", area: "" },
+                { name: "", area: "" },
+            ],
             garden: resetMarked(d.garden),
+            garden_other: [
+                { name: "", area: "" },
+                { name: "", area: "" },
+                { name: "", area: "" },
+                { name: "", area: "" },
+            ],
             irrigation_sources: [],
             beekeeping: false,
             has_storage: false,
@@ -322,15 +419,29 @@ const FirstForm: React.FC = () => {
         if (!validate()) return;
 
         const seeds = showVegetable
-            ? Object.entries(data.veg)
-                .filter(([, v]) => v.checked)
-                .map(([key, v]) => ({ key, area: v.area }))
+            ? [
+                ...Object.entries(data.veg)
+                    .filter(([, v]) => v.checked)
+                    .map(([key, v]) => ({ key, area: v.area })),
+                ...data.veg_other
+                    .filter((e) => e.name.trim() && e.area.trim())
+                    .map((e, idx) => ({ key: `other_${idx + 1}`, name: e.name, area: e.area })),
+            ]
             : [];
         const seedlings = showGarden
-            ? Object.entries(data.garden)
-                .filter(([, v]) => v.checked)
-                .map(([key, v]) => ({ key, area: v.area }))
+            ? [
+                ...Object.entries(data.garden)
+                    .filter(([, v]) => v.checked)
+                    .map(([key, v]) => ({ key, area: v.area })),
+                ...data.garden_other
+                    .filter((e) => e.name.trim() && e.area.trim())
+                    .map((e, idx) => ({ key: `other_${idx + 1}`, name: e.name, area: e.area })),
+            ]
             : [];
+
+        const incomeValue = data.income.includes("other")
+            ? [...data.income.filter((i) => i !== "other"), data.income_other_text].join(", ")
+            : data.income.join(", ");
 
         transform((d) => ({
             meeting_date: d.meeting_date,
@@ -345,7 +456,7 @@ const FirstForm: React.FC = () => {
             children_count: d.children_count ? Number(d.children_count) : 0,
             elderly_count: d.elderly_count ? Number(d.elderly_count) : 0,
             able_count: d.able_count ? Number(d.able_count) : 0,
-            income: d.income === "other" ? d.income_other_text : d.income,
+            income: incomeValue,
             plot_ha: toDecimal(d.plot_ha),
             agriculture_experience: d.agriculture_experience,
             seeds: seeds.length ? seeds : null,
@@ -548,19 +659,19 @@ const FirstForm: React.FC = () => {
                     {/* 3. Доход */}
                     <div className="grid gap-3">
                         <Label>3. Основной источник дохода семьи</Label>
-                        <RadioGroup
-                            value={data.income}
-                            onValueChange={(v) => setData("income", v)}
-                            className="flex flex-col md:flex-row gap-3"
-                            aria-label="Основной источник дохода семьи"
-                        >
+                        <div className="flex flex-col md:flex-row gap-3">
                             {INCOME_OPTIONS.map(([label, value]) => (
                                 <div key={value} className="flex items-center gap-2">
-                                    <RadioGroupItem value={value} id={`income_${value}`} />
+                                    <Checkbox
+                                        id={`income_${value}`}
+                                        checked={data.income.includes(value)}
+                                        onCheckedChange={(c) => toggleIncome(value, Boolean(c))}
+                                        aria-label={`Источник дохода: ${label}`}
+                                    />
                                     <Label htmlFor={`income_${value}`}>{label}</Label>
                                 </div>
                             ))}
-                        </RadioGroup>
+                        </div>
                         {errors.income && <p className="text-red-500">{errors.income}</p>}
                         {showIncomeOther && (
                             <Input
@@ -575,17 +686,17 @@ const FirstForm: React.FC = () => {
 
                     {/* 4. Площадь участка */}
                     <div className="grid gap-3">
-                        <Label>4. Площадь приусадебного участка (га)</Label>
+                        <Label>4. Масоҳати умумии замини наздиҳавлигӣ, сотых</Label>
                         <Input
                             type="text"
                             inputMode="decimal"
-                            placeholder="в гектарах"
+                            placeholder="в сотых"
                             value={data.plot_ha}
                             onChange={(e) => {
                                 const value = e.target.value;
-                                if (/^\d*[.,]?\d*$/.test(value)) setData("plot_ha", value);
+                                setData("plot_ha", value.replace(/[^\d.,]/g, ""));
                             }}
-                            aria-label="Площадь участка в гектарах"
+                            aria-label="Площадь участка в сотых"
                         />
                         {errors.plot_ha && <p className="text-red-500">{errors.plot_ha}</p>}
                     </div>
@@ -624,26 +735,40 @@ const FirstForm: React.FC = () => {
 
                     {/* 6. Овощеводство */}
                     {showVegetable && (
-                        <MarkedItemSection
-                            options={VEG_OPTIONS}
-                            data={data.veg}
-                            setItem={setVegItem}
-                            label="6. Если Вы выбираете направление «Овощеводство», отметьте нужные семена и укажите площадь (га):"
-                            note="Примечание: В пакет входят сеялка, опрыскиватель, защитная спецодежда, овощеводческий инвентарь."
-                            error={errors.seeds}
-                        />
+                        <>
+                            <MarkedItemSection
+                                options={VEG_OPTIONS}
+                                data={data.veg}
+                                setItem={setVegItem}
+                                label="6. Если Вы выбираете направление «Овощеводство», отметьте нужные семена и укажите площадь (сотых):"
+                                note="Примечание: В пакет входят сеялка, опрыскиватель, защитная спецодежда, овощеводческий инвентарь."
+                                error={errors.seeds}
+                            />
+                            <OtherEntriesSection
+                                entries={data.veg_other}
+                                setEntry={setVegOtherEntry}
+                                error={errors.veg_other}
+                            />
+                        </>
                     )}
 
                     {/* 7. Садоводство */}
                     {showGarden && (
-                        <MarkedItemSection
-                            options={GARDEN_OPTIONS}
-                            data={data.garden}
-                            setItem={setGardenItem}
-                            label="7. Если Вы выбираете направление «Садоводство», отметьте нужные саженцы и укажите площадь (га):"
-                            note="Примечание: В пакет входят ручной опрыскиватель, защитная спецодежда, садовый инвентарь (набор)."
-                            error={errors.seedlings}
-                        />
+                        <>
+                            <MarkedItemSection
+                                options={GARDEN_OPTIONS}
+                                data={data.garden}
+                                setItem={setGardenItem}
+                                label="7. Если Вы выбираете направление «Садоводство», отметьте нужные саженцы и укажите площадь (сотых):"
+                                note="Примечание: В пакет входят ручной опрыскиватель, защитная спецодежда, садовый инвентарь (набор)."
+                                error={errors.seedlings}
+                            />
+                            <OtherEntriesSection
+                                entries={data.garden_other}
+                                setEntry={setGardenOtherEntry}
+                                error={errors.garden_other}
+                            />
+                        </>
                     )}
 
                     {/* 8. Орошение */}

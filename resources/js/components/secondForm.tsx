@@ -16,12 +16,13 @@ import { format, parse } from "date-fns";
 import { toast } from "sonner"
 
 /* ===== helpers & types ===== */
-type VegKey = "tomato" | "pepper" | "cucumber" | "onion" | "beet" | "potato" | "other";
-type GardenKey = "apricot" | "apple" | "grape" | "almond" | "persimmon" | "berries" | "other";
+type VegKey = "tomato" | "pepper" | "cucumber" | "onion" | "beet" | "potato";
+type GardenKey = "apricot" | "apple" | "grape" | "almond" | "persimmon" | "berries";
 type IrrKey = "none" | "well" | "pump" | "canal";
 type Equip = "freza" | "seeder" | "cultivator" | "other" | "";
 
 type MarkedMap<K extends string> = Record<K, { checked: boolean; area: string }>;
+type OtherEntry = { name: string; area: string };
 
 type FormData = {
     meeting_date: string | null;
@@ -36,7 +37,9 @@ type FormData = {
     farm_plot_ha: string;
     agriculture_experience: "" | "овощеводство" | "садоводство" | "пчеловодство" | "нет опыта";
     veg: MarkedMap<VegKey>;
+    veg_other: OtherEntry[];
     garden: MarkedMap<GardenKey>;
+    garden_other: OtherEntry[];
     equipment_choice: Equip;
     equipment_other_text: string;
     irrigation_sources: IrrKey[];
@@ -62,7 +65,6 @@ const VEG_OPTIONS: Array<[string, VegKey]> = [
     ["Лук", "onion"],
     ["Свёкла", "beet"],
     ["Картофель", "potato"],
-    ["Другое", "other"],
 ];
 
 const GARDEN_OPTIONS: Array<[string, GardenKey]> = [
@@ -72,7 +74,6 @@ const GARDEN_OPTIONS: Array<[string, GardenKey]> = [
     ["Миндаль", "almond"],
     ["Хурма", "persimmon"],
     ["Ягодные культуры", "berries"],
-    ["Другое", "other"],
 ];
 
 const IRRIGATION_OPTIONS: Array<[string, IrrKey]> = [
@@ -122,19 +123,56 @@ function MarkedItemSection<K extends string>({
                         </Label>
                         <Input
                             className="ml-auto"
-                            placeholder="га"
+                            placeholder="сотых"
                             value={data[key].area}
                             onChange={(e) =>
                                 setItem(key, { area: e.target.value.replace(/[^\d.,]/g, "") })
                             }
                             disabled={!data[key].checked}
                             required={data[key].checked}
-                            aria-label={`Площадь для ${lbl} в гектарах`}
+                            aria-label={`Площадь для ${lbl} в сотых`}
                         />
                     </div>
                 ))}
             </div>
             <p className="text-sm text-muted-foreground">{note}</p>
+            {error && <p className="text-red-500">{error}</p>}
+        </div>
+    );
+}
+
+/* ===== OtherEntriesSection Component ===== */
+function OtherEntriesSection({
+                                 entries,
+                                 setEntry,
+                                 error,
+                             }: {
+    entries: OtherEntry[];
+    setEntry: (index: number, field: "name" | "area", value: string) => void;
+    error?: string;
+}) {
+    return (
+        <div className="grid gap-3">
+            <Label>Другое (указать название)</Label>
+            <div className="grid gap-3">
+                {entries.map((entry, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{idx + 1}.</span>
+                        <Input
+                            placeholder="название культуры"
+                            value={entry.name}
+                            onChange={(e) => setEntry(idx, "name", e.target.value)}
+                            aria-label={`Название культуры ${idx + 1}`}
+                        />
+                        <Input
+                            placeholder="сотых"
+                            value={entry.area}
+                            onChange={(e) => setEntry(idx, "area", e.target.value.replace(/[^\d.,]/g, ""))}
+                            aria-label={`Площадь для культуры ${idx + 1} в сотых`}
+                        />
+                    </div>
+                ))}
+            </div>
             {error && <p className="text-red-500">{error}</p>}
         </div>
     );
@@ -161,8 +199,13 @@ const SecondForm: React.FC = () => {
             onion: { checked: false, area: "" },
             beet: { checked: false, area: "" },
             potato: { checked: false, area: "" },
-            other: { checked: false, area: "" },
         },
+        veg_other: [
+            { name: "", area: "" },
+            { name: "", area: "" },
+            { name: "", area: "" },
+            { name: "", area: "" },
+        ],
         garden: {
             apricot: { checked: false, area: "" },
             apple: { checked: false, area: "" },
@@ -170,8 +213,13 @@ const SecondForm: React.FC = () => {
             almond: { checked: false, area: "" },
             persimmon: { checked: false, area: "" },
             berries: { checked: false, area: "" },
-            other: { checked: false, area: "" },
         },
+        garden_other: [
+            { name: "", area: "" },
+            { name: "", area: "" },
+            { name: "", area: "" },
+            { name: "", area: "" },
+        ],
         equipment_choice: "",
         equipment_other_text: "",
         irrigation_sources: [],
@@ -194,6 +242,18 @@ const SecondForm: React.FC = () => {
         setData("veg", { ...data.veg, [key]: { ...data.veg[key], ...patch } });
     const setGardenItem = (key: GardenKey, patch: Partial<{ checked: boolean; area: string }>) =>
         setData("garden", { ...data.garden, [key]: { ...data.garden[key], ...patch } });
+
+    const setVegOtherEntry = (index: number, field: "name" | "area", value: string) => {
+        const updated = [...data.veg_other];
+        updated[index] = { ...updated[index], [field]: value };
+        setData("veg_other", updated);
+    };
+
+    const setGardenOtherEntry = (index: number, field: "name" | "area", value: string) => {
+        const updated = [...data.garden_other];
+        updated[index] = { ...updated[index], [field]: value };
+        setData("garden_other", updated);
+    };
 
     const toggleIrrigation = (key: IrrKey, checked: boolean) => {
         if (key === "none" && checked) {
@@ -237,14 +297,30 @@ const SecondForm: React.FC = () => {
         if (showVegetable && anyVegChecked) {
             const miss = Object.values(data.veg).some((v) => v.checked && !v.area);
             if (miss) {
-                setError("seeds", "Для выбранных культур укажите площадь (га).");
+                setError("seeds", "Для выбранных культур укажите площадь (сотых).");
+                ok = false;
+            }
+        }
+        if (showVegetable) {
+            const vegOtherWithData = data.veg_other.filter((e) => e.name.trim() || e.area.trim());
+            const vegOtherIncomplete = vegOtherWithData.some((e) => !e.name.trim() || !e.area.trim());
+            if (vegOtherIncomplete) {
+                setError("veg_other", "Для поля 'Другое' укажите и название культуры, и площадь.");
                 ok = false;
             }
         }
         if (showGarden && anyGardenChecked) {
             const miss = Object.values(data.garden).some((v) => v.checked && !v.area);
             if (miss) {
-                setError("seedlings", "Для выбранных культур укажите площадь (га).");
+                setError("seedlings", "Для выбранных культур укажите площадь (сотых).");
+                ok = false;
+            }
+        }
+        if (showGarden) {
+            const gardenOtherWithData = data.garden_other.filter((e) => e.name.trim() || e.area.trim());
+            const gardenOtherIncomplete = gardenOtherWithData.some((e) => !e.name.trim() || !e.area.trim());
+            if (gardenOtherIncomplete) {
+                setError("garden_other", "Для поля 'Другое' укажите и название культуры, и площадь.");
                 ok = false;
             }
         }
@@ -279,7 +355,19 @@ const SecondForm: React.FC = () => {
             farm_plot_ha: "",
             agriculture_experience: "",
             veg: resetMarked(d.veg),
+            veg_other: [
+                { name: "", area: "" },
+                { name: "", area: "" },
+                { name: "", area: "" },
+                { name: "", area: "" },
+            ],
             garden: resetMarked(d.garden),
+            garden_other: [
+                { name: "", area: "" },
+                { name: "", area: "" },
+                { name: "", area: "" },
+                { name: "", area: "" },
+            ],
             equipment_choice: "",
             equipment_other_text: "",
             irrigation_sources: [],
@@ -296,14 +384,24 @@ const SecondForm: React.FC = () => {
         if (!validate()) return;
 
         const seeds = showVegetable
-            ? Object.entries(data.veg)
-                .filter(([, v]) => v.checked)
-                .map(([key, v]) => ({ key, area: v.area }))
+            ? [
+                ...Object.entries(data.veg)
+                    .filter(([, v]) => v.checked)
+                    .map(([key, v]) => ({ key, area: v.area })),
+                ...data.veg_other
+                    .filter((e) => e.name.trim() && e.area.trim())
+                    .map((e, idx) => ({ key: `other_${idx + 1}`, name: e.name, area: e.area })),
+            ]
             : [];
         const seedlings = showGarden
-            ? Object.entries(data.garden)
-                .filter(([, v]) => v.checked)
-                .map(([key, v]) => ({ key, area: v.area }))
+            ? [
+                ...Object.entries(data.garden)
+                    .filter(([, v]) => v.checked)
+                    .map(([key, v]) => ({ key, area: v.area })),
+                ...data.garden_other
+                    .filter((e) => e.name.trim() && e.area.trim())
+                    .map((e, idx) => ({ key: `other_${idx + 1}`, name: e.name, area: e.area })),
+            ]
             : [];
 
         transform((d) => ({
@@ -521,26 +619,40 @@ const SecondForm: React.FC = () => {
 
                     {/* 4. Овощеводство */}
                     {showVegetable && (
-                        <MarkedItemSection
-                            options={VEG_OPTIONS}
-                            data={data.veg}
-                            setItem={setVegItem}
-                            label="4. Если Вы выбираете «Овощеводство», отметьте семена и укажите площадь (га):"
-                            note="Примечание: сеялка, опрыскиватель, защитная одежда, овощеводческий инвентарь."
-                            error={errors.seeds}
-                        />
+                        <>
+                            <MarkedItemSection
+                                options={VEG_OPTIONS}
+                                data={data.veg}
+                                setItem={setVegItem}
+                                label="4. Если Вы выбираете «Овощеводство», отметьте семена и укажите площадь (сотых):"
+                                note="Примечание: сеялка, опрыскиватель, защитная одежда, овощеводческий инвентарь."
+                                error={errors.seeds}
+                            />
+                            <OtherEntriesSection
+                                entries={data.veg_other}
+                                setEntry={setVegOtherEntry}
+                                error={errors.veg_other}
+                            />
+                        </>
                     )}
 
                     {/* 5. Садоводство */}
                     {showGarden && (
-                        <MarkedItemSection
-                            options={GARDEN_OPTIONS}
-                            data={data.garden}
-                            setItem={setGardenItem}
-                            label="5. Если Вы выбираете «Садоводство», отметьте саженцы и укажите площадь (га):"
-                            note="Примечание: ручной опрыскиватель, защитная одежда, садовый инвентарь (набор)."
-                            error={errors.seedlings}
-                        />
+                        <>
+                            <MarkedItemSection
+                                options={GARDEN_OPTIONS}
+                                data={data.garden}
+                                setItem={setGardenItem}
+                                label="5. Если Вы выбираете «Садоводство», отметьте саженцы и укажите площадь (сотых):"
+                                note="Примечание: ручной опрыскиватель, защитная одежда, садовый инвентарь (набор)."
+                                error={errors.seedlings}
+                            />
+                            <OtherEntriesSection
+                                entries={data.garden_other}
+                                setEntry={setGardenOtherEntry}
+                                error={errors.garden_other}
+                            />
+                        </>
                     )}
 
                     {/* 6. Техника */}
