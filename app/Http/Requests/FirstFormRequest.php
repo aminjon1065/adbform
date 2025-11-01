@@ -31,7 +31,7 @@ class FirstFormRequest extends FormRequest
 
             // 2. Участник
             'full_name' => ['required', 'string', 'max:200'],
-            'age' => ['required', 'integer', 'between:1,100'],
+            'age' => ['required', 'integer', 'between:1900,' . date('Y')],
             'phone' => ['required', 'digits:9'],
             // Rule::unique('first_forms','phone') // если нужно уникально
 
@@ -44,8 +44,8 @@ class FirstFormRequest extends FormRequest
             // 4. Доход (может быть несколько источников, разделённых запятыми)
             'income' => ['required', 'string', 'max:255'],
 
-            // 5. Площадь участка (теперь в сотых)
-            'plot_ha' => ['nullable', 'numeric', 'min:0'],
+            // // 5. Площадь участка (теперь в сотых)
+            // 'plot_ha' => ['nullable', 'numeric', 'min:0'],
 
             // 6. Опыт
             'agriculture_experience' => ['required', Rule::in($expSet)],

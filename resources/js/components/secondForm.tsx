@@ -123,14 +123,14 @@ function MarkedItemSection<K extends string>({
                         </Label>
                         <Input
                             className="ml-auto"
-                            placeholder="сотых"
+                            placeholder="га"
                             value={data[key].area}
                             onChange={(e) =>
-                                setItem(key, { area: e.target.value.replace(/[^\d.,]/g, "") })
+                                setItem(key, { area: e.target.value.replace(/\D/g, "") })
                             }
                             disabled={!data[key].checked}
                             required={data[key].checked}
-                            aria-label={`Площадь для ${lbl} в сотых`}
+                            aria-label={`Площадь для ${lbl} в га`}
                         />
                     </div>
                 ))}
@@ -165,10 +165,10 @@ function OtherEntriesSection({
                             aria-label={`Название культуры ${idx + 1}`}
                         />
                         <Input
-                            placeholder="сотых"
+                            placeholder="га"
                             value={entry.area}
-                            onChange={(e) => setEntry(idx, "area", e.target.value.replace(/[^\d.,]/g, ""))}
-                            aria-label={`Площадь для культуры ${idx + 1} в сотых`}
+                            onChange={(e) => setEntry(idx, "area", e.target.value.replace(/\D/g, ""))}
+                            aria-label={`Площадь для культуры ${idx + 1} в га`}
                         />
                     </div>
                 ))}
@@ -297,7 +297,7 @@ const SecondForm: React.FC = () => {
         if (showVegetable && anyVegChecked) {
             const miss = Object.values(data.veg).some((v) => v.checked && !v.area);
             if (miss) {
-                setError("seeds", "Для выбранных культур укажите площадь (сотых).");
+                setError("seeds", "Для выбранных культур укажите площадь (га).");
                 ok = false;
             }
         }
@@ -312,7 +312,7 @@ const SecondForm: React.FC = () => {
         if (showGarden && anyGardenChecked) {
             const miss = Object.values(data.garden).some((v) => v.checked && !v.area);
             if (miss) {
-                setError("seedlings", "Для выбранных культур укажите площадь (сотых).");
+                setError("seedlings", "Для выбранных культур укажите площадь (га).");
                 ok = false;
             }
         }
@@ -624,7 +624,7 @@ const SecondForm: React.FC = () => {
                                 options={VEG_OPTIONS}
                                 data={data.veg}
                                 setItem={setVegItem}
-                                label="4. Если Вы выбираете «Овощеводство», отметьте семена и укажите площадь (сотых):"
+                                label="4. Если Вы выбираете «Овощеводство», отметьте семена и укажите площадь (га):"
                                 note="Примечание: сеялка, опрыскиватель, защитная одежда, овощеводческий инвентарь."
                                 error={errors.seeds}
                             />
@@ -643,7 +643,7 @@ const SecondForm: React.FC = () => {
                                 options={GARDEN_OPTIONS}
                                 data={data.garden}
                                 setItem={setGardenItem}
-                                label="5. Если Вы выбираете «Садоводство», отметьте саженцы и укажите площадь (сотых):"
+                                label="5. Если Вы выбираете «Садоводство», отметьте саженцы и укажите площадь (га):"
                                 note="Примечание: ручной опрыскиватель, защитная одежда, садовый инвентарь (набор)."
                                 error={errors.seedlings}
                             />

@@ -224,7 +224,7 @@ const Index: React.FC<IndexProps> = (props) => {
                                 Экспорт в Excel
                             </Button>
 
-                            <Button
+                            {/* <Button
                                 type="button"
                                 onClick={() => {
                                     const url = new URL("/first-forms/export/pdf", window.location.origin);
@@ -241,7 +241,7 @@ const Index: React.FC<IndexProps> = (props) => {
                                 variant="secondary"
                             >
                                 Экспорт в PDF
-                            </Button>
+                            </Button> */}
                         </div>
                     </div>
                 </CardTitle>
@@ -336,7 +336,7 @@ const Index: React.FC<IndexProps> = (props) => {
                                 <TableHead>Адрес</TableHead>
                                 <TableHead>Доход</TableHead>
                                 <TableHead>Опыт</TableHead>
-                                <TableHead>Площадь, га</TableHead>
+                                <TableHead>Площадь, сотых</TableHead>
                                 <TableHead>Пчеловодство</TableHead>
                                 <TableHead>Склад</TableHead>
                                 <TableHead>Холод.</TableHead>

@@ -14,9 +14,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            FirstFormSeeder::class,
-            SecondFormSeeder::class,
+
+        User::factory()->create([
+            'name' => 'Admin User',
+            'email' => 'admin@ex.com',
+            'password' => Hash::make('admin123'),
         ]);
+        // $this->call([
+        //     FirstFormSeeder::class,
+        //     SecondFormSeeder::class,
+        // ]);
     }
 }

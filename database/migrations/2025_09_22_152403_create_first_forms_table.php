@@ -27,7 +27,7 @@ return new class extends Migration {
 
             // 3. Участник
             $table->string('full_name', 200);
-            $table->unsignedTinyInteger('age'); // 1..100
+            $table->integer('age'); // 1..100
             $table->string('phone', 9); // ровно 9 цифр
             // $table->unique('phone'); // <- включи при необходимости
 
