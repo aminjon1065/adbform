@@ -90,7 +90,7 @@ const SORT_FIELDS: Array<{ value: NonNullable<Filters["sort"]>; label: string }>
     { value: "created_at", label: "Создано" },
     { value: "meeting_date", label: "Дата встречи" },
     { value: "full_name", label: "Ф.И.О." },
-    { value: "age", label: "Возраст" },
+    { value: "age", label: "Год рождения" },
     { value: "rayon", label: "Район" },
     { value: "jamoat", label: "Джамоат" },
     { value: "income", label: "Доход" },
@@ -331,7 +331,7 @@ const Index: React.FC<IndexProps> = (props) => {
                             <TableRow>
                                 <TableHead>Дата встречи</TableHead>
                                 <TableHead>Ф.И.О.</TableHead>
-                                <TableHead>Возраст</TableHead>
+                                <TableHead>Год рождения</TableHead>
                                 <TableHead>Телефон</TableHead>
                                 <TableHead>Адрес</TableHead>
                                 <TableHead>Доход</TableHead>

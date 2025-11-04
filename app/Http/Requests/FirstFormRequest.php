@@ -89,7 +89,7 @@ class FirstFormRequest extends FormRequest
             'has_storage' => (bool)$this->boolean('has_storage'),
             'has_refrigerator' => (bool)$this->boolean('has_refrigerator'),
             'phone' => $this->phone ? preg_replace('/\D+/', '', $this->phone) : null,
-            'plot_ha' => $plot !== null && $plot !== '' ? str_replace(',', '.', $plot) : null,
+            'plot_ha' => $plot,
             'meeting_date' => $this->meeting_date
                 ? \Carbon\Carbon::parse($this->meeting_date)->toDateString()
                 : null,

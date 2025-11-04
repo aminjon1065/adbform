@@ -22,6 +22,9 @@ class FirstFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldAu
         'canal' => 'Канал / дарё',
     ];
 
+    private const MAX_INCOME_COLS = 5;
+    private const MAX_IRRIGATION_COLS = 4;
+
     private const SEED_LABELS = [
         'tomato'   => 'Помидор',
         'pepper'   => 'Болгарский перец',
@@ -53,6 +56,42 @@ class FirstFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldAu
         'пчеловодство' => 'Занбӯриасалпарварӣ',
         'нет опыта'    => 'Таҷриба надорам',
     ];
+
+
+    private function irrigationItems(?array $arr): array
+    {
+        if (!is_array($arr) || !$arr) return [];
+        // Переводим коды в метки и фильтруем пустые
+        $items = array_values(array_filter($arr, fn($v) => $v !== null && $v !== ''));
+        return array_map(fn($k) => self::IRRIGATION_LABELS[$k] ?? (string)$k, $items);
+    }
+
+    private function irrigationColumns(?array $arr): array
+    {
+        $items = $this->irrigationItems($arr);
+        $items = array_slice($items, 0, self::MAX_IRRIGATION_COLS);
+        while (count($items) < self::MAX_IRRIGATION_COLS) {
+            $items[] = '';
+        }
+        return $items;
+    }
+    private function incomeItems(?string $income): array
+    {
+        if (!$income) return [];
+        $items = array_map('trim', explode(',', $income));
+        return array_map(fn($i) => self::INCOME_LABELS[$i] ?? $i, $items);
+    }
+
+// Подготовить фиксированное число колонок (пустые, если не хватает)
+    private function incomeColumns(?string $income): array
+    {
+        $items = $this->incomeItems($income);
+        $items = array_slice($items, 0, self::MAX_INCOME_COLS);
+        while (count($items) < self::MAX_INCOME_COLS) {
+            $items[] = '';
+        }
+        return $items;
+    }
 
     private function labelIrrigation(?array $arr): string
     {
@@ -174,9 +213,16 @@ class FirstFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldAu
             'кӯдакон',
             'пиронсолон',
             'қобили меҳнат',
-            'Манбаи асосии даромади оила',
+
+            // ▼ было: 'Манбаи асосии даромади оила',
+            'Манбаи асосии даромади оила 1',
+            'Манбаи асосии даромади оила 2',
+            'Манбаи асосии даромади оила 3',
+            'Манбаи асосии даромади оила 4',
+            'Манбаи асосии даромади оила 5',
+
             'Масоҳати умумии замини наздиҳавлигӣ, сотых',
-            'Дар кадом самт таҷрибаи корӣ доред?',
+            'Дар сабзакорӣ таҷрибаи корӣ доред?',
             'Помидор, сотых',
             'Қаламфури булғорӣ, сотых',
             'Бодиринг, сотых',
@@ -191,6 +237,7 @@ class FirstFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldAu
             'сотых',
             'Номи дигар намуди сабзавоти 4(Ном)',
             'сотых',
+            'Дар боғбонӣ таҷрибаи корӣ доред?',
             'Зардолу, сотых',
             'Себ, сотых',
             'Ангур, сотых',
@@ -205,7 +252,10 @@ class FirstFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldAu
             'сотых',
             'Номи дигар намуди ниҳоли 4 (Ном)',
             'сотых',
-            'Манбаи обёрии ба Шумо дастрасбударо нишон диҳед:',
+            'Манбаи обёрии ба Шумо дастрасбударо нишон диҳед 1',
+            'Манбаи обёрии ба Шумо дастрасбударо нишон диҳед 2',
+            'Манбаи обёрии ба Шумо дастрасбударо нишон диҳед 3',
+            'Манбаи обёрии ба Шумо дастрасбударо нишон диҳед 4',
             'Занбӯриасалпарварӣ',
             '10. Оё шумо анбор доред?',
             'масоҳати анбор, м²',
@@ -220,14 +270,15 @@ class FirstFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldAu
         static $counter = 0;
         $counter++;
 
-        $irrigation = $this->labelIrrigation($row->irrigation_sources);
-        $income = $this->labelIncome($row->income);
-        $experience = self::EXPERIENCE_LABELS[$row->agriculture_experience] ?? $row->agriculture_experience;
+        $irrigationCols = $this->irrigationColumns($row->irrigation_sources);
 
-        // Формируем полный адрес
-        $address = collect([$row->rayon, $row->jamoat, $row->selo])
-            ->filter()
-            ->implode(', ');
+        // 5 колонок доходов
+        $incomeCols = $this->incomeColumns($row->income);
+
+        // метка опыта
+        $expLabel  = self::EXPERIENCE_LABELS[$row->agriculture_experience] ?? $row->agriculture_experience;
+        $expVeg    = ($expLabel === 'Сабзикорӣ') ? 'Бале' : 'Не'; // овощеводство
+        $expGarden = ($expLabel === 'Боғдорӣ')   ? 'Бале' : 'Не'; // садоводство
 
         // Извлечь площади для семян (6 основных)
         $seedAreas = [
@@ -238,6 +289,7 @@ class FirstFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldAu
             $this->getArea($row->seeds, 'beet'),
             $this->getArea($row->seeds, 'potato'),
         ];
+
 
         // Извлечь "другие" для семян (4 варианта)
         $seedOthers = $this->getOtherEntries($row->seeds);
@@ -266,35 +318,35 @@ class FirstFormsExport implements FromQuery, WithMapping, WithHeadings, ShouldAu
         }
 
         return [
-            $counter, // №
-            $row->rayon, // Ном. района
-            $row->jamoat, // Ном. джамоата
-            $row->selo ?? '', // Ном. села
-            $row->full_name, // ФИО
-            $row->age, // Год рождения
-            $row->phone, // Телефон
-            $row->family_count, // Общее количество членов семьи
-            $row->children_count, // в том числе детей
-            $row->elderly_count, // пожилых
-            $row->able_count, // трудоспособных
-            $income, // Основной источник дохода семьи (переведённый)
-            $row->plot_ha, // Площадь, сотых
-            $experience, // Опыт (переведённый)
-            // Семена: 6 основных культур
+            $counter,
+            $row->rayon,
+            $row->jamoat,
+            $row->selo ?? '',
+            $row->full_name,
+            $row->age,
+            $row->phone,
+            $row->family_count,
+            $row->children_count,
+            $row->elderly_count,
+            $row->able_count,
+
+            // доходы по колонкам
+            ...$incomeCols,
+
+            $row->plot_ha,
+            $expVeg,
             ...$seedAreas,
-            // Семена: 4 "других" (name, area, name, area, ...)
             ...$seedOtherFlat,
-            // Саженцы: 6 основных культур
+            $expGarden,
             ...$seedlingAreas,
-            // Саженцы: 4 "других" (name, area, name, area, ...)
             ...$seedlingOtherFlat,
-            $irrigation, // Орошение
-            $row->beekeeping ? 'Ҳа' : 'Не', // Пчеловодство
-            $row->has_storage ? 'Ҳа' : 'Не', // Склад
-            $row->has_storage ? $row->storage_area_sqm : '', // Площадь склада
-            $row->has_refrigerator ? 'Ҳа' : 'Не', // Холод. камера
-            $row->user ? $row->user->name : 'Оператор удалён', // Оператор
-            optional($row->created_at)->format('d.m.Y H:i'), // Дата создания
+            ...$irrigationCols,
+            $row->beekeeping ? 'Ҳа' : 'Не',
+            $row->has_storage ? 'Ҳа' : 'Не',
+            $row->has_storage ? $row->storage_area_sqm : '',
+            $row->has_refrigerator ? 'Ҳа' : 'Не',
+            $row->user ? $row->user->name : 'Оператор удалён',
+            optional($row->created_at)->format('d.m.Y H:i'),
         ];
     }
 }

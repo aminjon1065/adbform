@@ -11,6 +11,7 @@ use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\FirstFormsExport;
 use Barryvdh\DomPDF\Facade\Pdf;
+
 class FirstFormController extends Controller
 {
     public function store(FirstFormRequest $request): RedirectResponse
@@ -30,11 +31,6 @@ class FirstFormController extends Controller
 
         // irrigation_sources: уникальные строки
         $irrigation = array_values(array_unique($v['irrigation_sources'] ?? []));
-
-        // plot_ha: безопасное приведение под DECIMAL(8,2)
-        $plotHa = (isset($v['plot_ha']) && $v['plot_ha'] !== '')
-            ? number_format((float)$v['plot_ha'], 2, '.', '')
-            : null;
 
         // (опционально) проверка согласованности семьи
         if (
@@ -67,7 +63,7 @@ class FirstFormController extends Controller
 
             'income' => $v['income'],
 
-            'plot_ha' => $plotHa,
+            'plot_ha' => $request->plot_ha,
 
             'agriculture_experience' => $v['agriculture_experience'],
 
@@ -104,8 +100,8 @@ class FirstFormController extends Controller
         $items = $this->baseQuery($request)->get();
 
         $pdf = Pdf::loadView('exports.first_forms_pdf', [
-            'items'   => $items,
-            'filters' => $request->only(['q','date_from','date_to','sort','order']),
+            'items' => $items,
+            'filters' => $request->only(['q', 'date_from', 'date_to', 'sort', 'order']),
         ])->setPaper('a4', 'landscape');
 
         return $pdf->download('first_forms_' . now()->format('Y-m-d_H-i') . '.pdf');
@@ -118,7 +114,7 @@ class FirstFormController extends Controller
 
         // Поиск
         if ($search = trim((string)$request->input('q'))) {
-            $like = '%' . str_replace('%','\%',$search) . '%';
+            $like = '%' . str_replace('%', '\%', $search) . '%';
             $q->where(function ($qq) use ($like) {
                 $qq->where('full_name', 'like', $like)
                     ->orWhere('rayon', 'like', $like)
@@ -140,10 +136,10 @@ class FirstFormController extends Controller
         }
 
         // Сортировка
-        $sort  = $request->input('sort', 'created_at');
+        $sort = $request->input('sort', 'created_at');
         $order = $request->input('order', 'desc');
-        $allowedSorts = ['created_at','meeting_date','full_name','age','rayon','jamoat','income','plot_ha'];
-        if (! in_array($sort, $allowedSorts, true)) {
+        $allowedSorts = ['created_at', 'meeting_date', 'full_name', 'age', 'rayon', 'jamoat', 'income', 'plot_ha'];
+        if (!in_array($sort, $allowedSorts, true)) {
             $sort = 'created_at';
         }
         $order = $order === 'asc' ? 'asc' : 'desc';
